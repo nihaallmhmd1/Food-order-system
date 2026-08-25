@@ -6,6 +6,8 @@ import categoryRoutes from "./routes/categoryRoutes";
 import foodItemRoutes from "./routes/foodItemRoutes";
 import orderRoutes from "./routes/orderRoutes";
 import authRoutes from "./routes/authRoutes";
+import searchRoutes from "./routes/searchRoutes";
+import userRoutes from "./routes/userRoutes";
 
 const app = express();
 
@@ -30,5 +32,7 @@ app.use("/api/categories", categoryRoutes);
 app.use("/api/food-items", foodItemRoutes);
 app.use("/api/orders", orderRoutes);
 app.use("/api/auth", authRoutes);
+app.use("/api/search", searchRoutes);
+app.use("/api/users", userRoutes);
 
 export default app;

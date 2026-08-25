@@ -71,6 +71,7 @@ export const getRestaurantById = async (
 };
 
 // POST /api/restaurants
+// Admin only
 export const createRestaurant = async (
   req: Request,
   res: Response

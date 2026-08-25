@@ -224,11 +224,8 @@ export const updateFoodItem = async (
       return;
     }
 
-    const foodItem = await FoodItem.findOneAndUpdate(
-      {
-        _id: id,
-        isActive: true,
-      },
+    const foodItem = await FoodItem.findByIdAndUpdate(
+      id,
       req.body,
       {
         new: true,

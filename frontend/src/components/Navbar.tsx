@@ -1,209 +1,186 @@
 import { useState } from "react";
-import { Link, useLocation } from "react-router-dom";
-import { useCart } from "../context/CartContext";
+import { Link, useNavigate, useLocation } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 
-function Navbar() {
-  const [menuOpen, setMenuOpen] = useState(false);
+export default function Navbar() {
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  
+  const { user, logout } = useAuth();
+
+  const navigate = useNavigate();
   const location = useLocation();
-  const { cartItems } = useCart();
-  if (location.pathname === "/cart") {
-    return null;
-  }
-  const cartCount = cartItems.reduce(
-    (total, item) => total + item.quantity,
-    0
-  );
 
-  const isActive = (path: string) => location.pathname === path;
+  const isHomePage = location.pathname === "/";
+
+  const getDisplayName = () => {
+    if (!user) return "";
+    if (user.name) return user.name;
+    if (user.email) return user.email.split("@")[0];
+    return "User";
+  };
+
+  const handleLogout = () => {
+    logout();
+    navigate("/login");
+  };
 
   return (
-    <header className="sticky top-0 z-50 border-b bg-white">
-      <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-5 sm:px-8 lg:px-10">
-        
-        {/* Logo */}
-        <Link
-          to="/"
-          className="text-3xl font-extrabold tracking-tight text-orange-500"
-        >
-          Foodie
-        </Link>
-
-        {/* Desktop Navigation */}
-        <nav className="hidden items-center gap-10 md:flex">
+    <header className="fixed top-0 left-0 right-0 z-50 pt-4 pointer-events-none">
+      <div className="mx-auto max-w-[1100px] px-4 sm:px-6">
+        <nav className="pointer-events-auto relative flex items-center justify-between rounded-full bg-white/80 px-6 py-3 shadow-xl backdrop-blur-md transition-all duration-300 hover:bg-white/95">
+          {/* Brand Logo */}
           <Link
             to="/"
-            className={`text-[17px] font-semibold transition ${
-              isActive("/")
-                ? "text-gray-900"
-                : "text-gray-700 hover:text-orange-500"
-            }`}
+            className="flex items-center gap-2 text-lg font-bold text-gray-900 transition-transform duration-300 hover:scale-105"
           >
-            Home
-          </Link>
-
-          <Link
-            to="/restaurants"
-            className={`text-[17px] font-semibold transition ${
-              isActive("/restaurants")
-                ? "text-gray-900"
-                : "text-gray-700 hover:text-orange-500"
-            }`}
-          >
-            Restaurants
-          </Link>
-
-          <Link
-            to="/orders"
-            className={`text-[17px] font-semibold transition ${
-              isActive("/orders")
-                ? "text-gray-900"
-                : "text-gray-700 hover:text-orange-500"
-            }`}
-          >
-            Orders
-          </Link>
-        </nav>
-
-        {/* Desktop Cart */}
-        <Link
-          to="/cart"
-          className="hidden items-center gap-3 rounded-full bg-orange-500 px-7 py-3 text-[16px] font-bold text-white shadow-sm transition hover:bg-orange-600 md:flex"
-        >
-          {/* Cart Icon */}
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-5 w-5"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <circle cx="9" cy="20" r="1" />
-            <circle cx="19" cy="20" r="1" />
-            <path d="M3 4h2l2.4 11.4a2 2 0 0 0 2 1.6h7.8a2 2 0 0 0 2-1.6L21 8H6" />
-          </svg>
-
-          Cart
-
-          {cartCount > 0 && (
-            <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-white px-1 text-xs font-bold text-orange-500">
-              {cartCount}
+            <span className="flex h-7 w-7 items-center justify-center rounded-full bg-emerald-600 text-xs text-white shadow-sm">
+              🍔
             </span>
-          )}
-        </Link>
+            Foodie
+          </Link>
 
-        {/* Mobile Menu Button */}
-        <button
-          onClick={() => setMenuOpen(!menuOpen)}
-          className="rounded-lg p-2 text-gray-700 hover:bg-gray-100 md:hidden"
-          aria-label="Toggle menu"
-        >
-          {menuOpen ? (
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-7 w-7"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-            >
-              <path d="M6 6l12 12" />
-              <path d="M18 6L6 18" />
-            </svg>
-          ) : (
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-7 w-7"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-            >
-              <path d="M4 6h16" />
-              <path d="M4 12h16" />
-              <path d="M4 18h16" />
-            </svg>
-          )}
-        </button>
-      </div>
-
-      {/* Mobile Navigation */}
-      {menuOpen && (
-        <div className="border-t border-gray-100 bg-white px-5 py-5 shadow-sm md:hidden">
-          <nav className="flex flex-col gap-2">
-            <Link
-              to="/"
-              onClick={() => setMenuOpen(false)}
-              className={`rounded-lg px-4 py-3 font-semibold ${
-                isActive("/")
-                  ? "bg-orange-50 text-orange-500"
-                  : "text-gray-700 hover:bg-gray-50"
-              }`}
-            >
-              Home
-            </Link>
-
+          {/* Desktop Navigation Links */}
+          <div className="hidden items-center gap-6 text-sm font-semibold text-gray-700 md:flex">
+            {!isHomePage && (
+              <Link
+                to="/"
+                className="transition-colors duration-200 hover:text-emerald-600 active:scale-95"
+              >
+                Home
+              </Link>
+            )}
             <Link
               to="/restaurants"
-              onClick={() => setMenuOpen(false)}
-              className={`rounded-lg px-4 py-3 font-semibold ${
-                isActive("/restaurants")
-                  ? "bg-orange-50 text-orange-500"
-                  : "text-gray-700 hover:bg-gray-50"
-              }`}
+              className="transition-colors duration-200 hover:text-emerald-600 active:scale-95"
             >
               Restaurants
             </Link>
-
             <Link
               to="/orders"
-              onClick={() => setMenuOpen(false)}
-              className={`rounded-lg px-4 py-3 font-semibold ${
-                isActive("/orders")
-                  ? "bg-orange-50 text-orange-500"
-                  : "text-gray-700 hover:bg-gray-50"
-              }`}
+              className="transition-colors duration-200 hover:text-emerald-600 active:scale-95"
             >
               Orders
             </Link>
+            <Link
+              to="/contact"
+              className="transition-colors duration-200 hover:text-emerald-600 active:scale-95"
+            >
+              Contact
+            </Link>
+          </div>
 
+          {/* Right Action: Cart & Auth State */}
+          <div className="hidden items-center gap-3 md:flex">
             <Link
               to="/cart"
-              onClick={() => setMenuOpen(false)}
-              className="mt-2 flex items-center justify-center gap-3 rounded-full bg-orange-500 px-6 py-3 font-bold text-white hover:bg-orange-600"
+              aria-label="View Cart"
+              className="flex h-9 w-9 items-center justify-center rounded-full bg-stone-100 text-stone-700 transition-colors hover:bg-emerald-100 hover:text-emerald-700"
             >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-5 w-5"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <circle cx="9" cy="20" r="1" />
-                <circle cx="19" cy="20" r="1" />
-                <path d="M3 4h2l2.4 11.4a2 2 0 0 0 2 1.6h7.8a2 2 0 0 0 2-1.6L21 8H6" />
-              </svg>
-
-              Cart
-
-              {cartCount > 0 && (
-                <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-white px-1 text-xs text-orange-500">
-                  {cartCount}
-                </span>
-              )}
+              🛒
             </Link>
-          </nav>
-        </div>
-      )}
+
+            {user ? (
+              <div className="flex items-center gap-3">
+                <span className="text-xs font-bold text-gray-800">
+                  {getDisplayName()}
+                </span>
+                <button
+                  onClick={handleLogout}
+                  className="rounded-full bg-stone-200 px-4 py-1.5 text-xs font-semibold text-gray-800 transition-all duration-300 hover:bg-red-500 hover:text-white"
+                >
+                  Logout
+                </button>
+              </div>
+            ) : (
+              <Link
+                to="/login"
+                className="rounded-full bg-slate-900 px-6 py-2 text-sm font-semibold text-white shadow-md transition-all duration-300 hover:bg-emerald-600 hover:shadow-emerald-600/30 active:scale-95"
+              >
+                Login
+              </Link>
+            )}
+          </div>
+
+          {/* Mobile Hamburger Button */}
+          <button
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            aria-label="Toggle Navigation Menu"
+            className="flex h-9 w-9 items-center justify-center rounded-full bg-stone-100 text-gray-700 hover:bg-stone-200 md:hidden"
+          >
+            {isMobileMenuOpen ? "✕" : "☰"}
+          </button>
+
+          {/* Mobile Dropdown Menu */}
+          {isMobileMenuOpen && (
+            <div className="absolute left-0 right-0 top-16 z-50 mx-4 flex flex-col gap-4 rounded-2xl bg-white p-6 shadow-2xl backdrop-blur-xl md:hidden">
+              {!isHomePage && (
+                <Link
+                  to="/"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="text-sm font-semibold text-gray-800 hover:text-emerald-600"
+                >
+                  Home
+                </Link>
+              )}
+              <Link
+                to="/restaurants"
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="text-sm font-semibold text-gray-800 hover:text-emerald-600"
+              >
+                Restaurants
+              </Link>
+              <Link
+                to="/orders"
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="text-sm font-semibold text-gray-800 hover:text-emerald-600"
+              >
+                Orders
+              </Link>
+              <Link
+                to="/contact"
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="text-sm font-semibold text-gray-800 hover:text-emerald-600"
+              >
+                Contact
+              </Link>
+
+              <hr className="border-gray-100" />
+
+              <div className="flex items-center justify-between">
+                <Link
+                  to="/cart"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="flex items-center gap-2 text-sm font-semibold text-gray-700"
+                >
+                  🛒 Cart
+                </Link>
+
+                {user ? (
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-gray-800">
+                      {getDisplayName()}
+                    </span>
+                    <button
+                      onClick={handleLogout}
+                      className="rounded-full bg-red-500 px-4 py-1 text-xs font-semibold text-white"
+                    >
+                      Logout
+                    </button>
+                  </div>
+                ) : (
+                  <Link
+                    to="/login"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="rounded-full bg-emerald-600 px-6 py-2 text-sm font-semibold text-white shadow-md"
+                  >
+                    Login
+                  </Link>
+                )}
+              </div>
+            </div>
+          )}
+        </nav>
+      </div>
     </header>
   );
 }
-
-export default Navbar;

@@ -182,3 +182,45 @@
     border-right-color: var(--border);
   }
 }
+/* 1. Global Centered Layout Container */
+.container {
+  width: 100%;
+  max-width: 1100px; /* Standard content width matching Zomato's main grid */
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 20px;
+  padding-right: 20px;
+  box-sizing: border-box;
+}
+
+/* 2. Section Header Alignment (Title on left, Link on right) */
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  
+  h2 {
+    font-size: 24px;
+    font-weight: 600;
+    margin: 0;
+  }
+
+  a {
+    color: var(--accent, #00b37a);
+    text-decoration: none;
+    font-weight: 500;
+  }
+}
+
+/* 3. Section Wrapper Reset */
+.section {
+  width: 100%;
+  padding: 32px 0;
+}
+
+/* Override existing #center styling to prevent layout shrinking */
+#center {
+  display: block;
+  width: 100%;
+}

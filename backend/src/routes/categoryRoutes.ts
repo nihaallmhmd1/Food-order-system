@@ -8,12 +8,17 @@ import {
   deleteCategory,
 } from "../controllers/categoryController";
 
+import {authenticate,
+        requireAdmin
+}from "../middleware/authMiddleware";
+
 const router = Router();
 
 router.get("/", getCategories);
 router.get("/:id", getCategoryById);
-router.post("/", createCategory);
-router.put("/:id", updateCategory);
-router.delete("/:id", deleteCategory);
+// Admin only manage caregories
+router.post("/", authenticate, requireAdmin, createCategory);
+router.put("/:id", authenticate, requireAdmin, updateCategory);
+router.delete("/:id", authenticate, requireAdmin, deleteCategory);
 
 export default router;

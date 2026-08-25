@@ -8,12 +8,12 @@ import Restaurant from "../models/Restaurant";
 import { AuthRequest } from "../middleware/authMiddleware";
 
 // POST /api/orders
+// Create order (Customer / Admin)
 export const createOrder = async (
   req: AuthRequest,
   res: Response
 ): Promise<void> => {
   try {
-    // Make sure authentication exists
     if (!req.user) {
       res.status(401).json({
         success: false,
@@ -72,7 +72,6 @@ export const createOrder = async (
     }
 
     let subtotal = 0;
-
     const orderItems = [];
 
     for (const item of items) {
@@ -105,7 +104,6 @@ export const createOrder = async (
       }
 
       const itemTotal = foodItem.price * item.quantity;
-
       subtotal += itemTotal;
 
       orderItems.push({
@@ -118,7 +116,6 @@ export const createOrder = async (
     }
 
     const deliveryFee = subtotal >= 500 ? 0 : 40;
-
     const totalAmount = subtotal + deliveryFee;
 
     const order = await Order.create({
@@ -143,7 +140,6 @@ export const createOrder = async (
     });
   } catch (error) {
     console.error("Create order error:", error);
-
     res.status(500).json({
       success: false,
       message: "Failed to create order",
@@ -151,14 +147,59 @@ export const createOrder = async (
   }
 };
 
-// GET /api/orders
-// Admin only
-export const getOrders = async (
-  _req: Request,
+// GET /api/orders/my-orders
+// Fetch ONLY logged-in user's orders (Customer / User page)
+export const getMyOrders = async (
+  req: AuthRequest,
   res: Response
 ): Promise<void> => {
   try {
-    const orders = await Order.find()
+    if (!req.user) {
+      res.status(401).json({
+        success: false,
+        message: "Authentication required",
+      });
+      return;
+    }
+
+    const orders = await Order.find({ userId: req.user.userId })
+      .populate("userId", "name email")
+      .populate("restaurantId", "name")
+      .populate("items.foodItemId", "name price image")
+      .sort({ createdAt: -1 });
+
+    res.status(200).json({
+      success: true,
+      count: orders.length,
+      data: orders,
+    });
+  } catch (error) {
+    console.error("Get my orders error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch order history",
+    });
+  }
+};
+
+// GET /api/orders
+// Returns all customer orders if Admin, or own orders if Customer (Admin page use)
+export const getOrders = async (
+  req: AuthRequest,
+  res: Response
+): Promise<void> => {
+  try {
+    if (!req.user) {
+      res.status(401).json({
+        success: false,
+        message: "Authentication required",
+      });
+      return;
+    }
+
+    const filter = req.user.role === "admin" ? {} : { userId: req.user.userId };
+
+    const orders = await Order.find(filter)
       .populate("userId", "name email")
       .populate("restaurantId", "name")
       .populate("items.foodItemId", "name price image")
@@ -171,7 +212,6 @@ export const getOrders = async (
     });
   } catch (error) {
     console.error("Get orders error:", error);
-
     res.status(500).json({
       success: false,
       message: "Failed to fetch orders",
@@ -180,8 +220,7 @@ export const getOrders = async (
 };
 
 // GET /api/orders/:id
-// Customer can view own order
-// Admin can view any order
+// Customer can view own order, Admin can view any order
 export const getOrderById = async (
   req: AuthRequest & Request<{ id: string }>,
   res: Response
@@ -218,20 +257,19 @@ export const getOrderById = async (
       return;
     }
 
-    console.log("JWT userId:", req.user.userId);
-    console.log("Order userId:", order.userId);
-    console.log("Order userId string:", order.userId.toString());
-    console.log("Role:", req.user.role);
+    // Extract raw string _id safely whether populated or unpopulated
+    const orderUserId =
+      typeof order.userId === "object" && order.userId !== null
+        ? (order.userId as { _id: mongoose.Types.ObjectId })._id.toString()
+        : String(order.userId);
 
     // Customers can only access their own orders
-    if (req.user.role !== "admin") {
-      if (order.userId.toString() !== req.user.userId) {
-        res.status(403).json({
-          success: false,
-          message: "You are not allowed to view this order",
-        });
-        return;
-      }
+    if (req.user.role !== "admin" && orderUserId !== req.user.userId) {
+      res.status(403).json({
+        success: false,
+        message: "You are not allowed to view this order",
+      });
+      return;
     }
 
     res.status(200).json({
@@ -240,7 +278,6 @@ export const getOrderById = async (
     });
   } catch (error) {
     console.error("Get order error:", error);
-
     res.status(500).json({
       success: false,
       message: "Failed to fetch order",
@@ -256,7 +293,6 @@ export const updateOrderStatus = async (
 ): Promise<void> => {
   try {
     const { id } = req.params;
-
     const { orderStatus, paymentStatus } = req.body;
 
     if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -276,11 +312,7 @@ export const updateOrderStatus = async (
       "CANCELLED",
     ];
 
-    const validPaymentStatuses = [
-      "PENDING",
-      "PAID",
-      "FAILED",
-    ];
+    const validPaymentStatuses = ["PENDING", "PAID", "FAILED"];
 
     if (orderStatus && !validOrderStatuses.includes(orderStatus)) {
       res.status(400).json({
@@ -303,22 +335,13 @@ export const updateOrderStatus = async (
       paymentStatus?: string;
     } = {};
 
-    if (orderStatus) {
-      updateData.orderStatus = orderStatus;
-    }
+    if (orderStatus) updateData.orderStatus = orderStatus;
+    if (paymentStatus) updateData.paymentStatus = paymentStatus;
 
-    if (paymentStatus) {
-      updateData.paymentStatus = paymentStatus;
-    }
-
-    const order = await Order.findByIdAndUpdate(
-      id,
-      updateData,
-      {
-        new: true,
-        runValidators: true,
-      }
-    );
+    const order = await Order.findByIdAndUpdate(id, updateData, {
+      new: true,
+      runValidators: true,
+    });
 
     if (!order) {
       res.status(404).json({
@@ -335,7 +358,6 @@ export const updateOrderStatus = async (
     });
   } catch (error) {
     console.error("Update order status error:", error);
-
     res.status(500).json({
       success: false,
       message: "Failed to update order status",
@@ -362,12 +384,8 @@ export const deleteOrder = async (
 
     const order = await Order.findByIdAndUpdate(
       id,
-      {
-        orderStatus: "CANCELLED",
-      },
-      {
-        new: true,
-      }
+      { orderStatus: "CANCELLED" },
+      { new: true }
     );
 
     if (!order) {
@@ -385,7 +403,6 @@ export const deleteOrder = async (
     });
   } catch (error) {
     console.error("Cancel order error:", error);
-
     res.status(500).json({
       success: false,
       message: "Failed to cancel order",

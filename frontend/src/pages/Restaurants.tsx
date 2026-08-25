@@ -1,249 +1,219 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { getRestaurants } from "../api/restaurantApi";
 
 type Restaurant = {
-  id: number;
+  _id: string;
   name: string;
-  cuisine: string;
+  description?: string;
+  cuisine: string[];
   rating: number;
-  deliveryTime: string;
+  deliveryTime: number;
+  deliveryFee: number;
   image: string;
 };
 
-const restaurants: Restaurant[] = [
-  {
-    id: 1,
-    name: "Spice Garden",
-    cuisine: "Indian",
-    rating: 4.5,
-    deliveryTime: "25-30 min",
-    image:
-      "https://images.unsplash.com/photo-1585937421612-70a008356fbe",
-  },
-  {
-    id: 2,
-    name: "Pizza House",
-    cuisine: "Pizza",
-    rating: 4.3,
-    deliveryTime: "20-25 min",
-    image:
-      "https://images.unsplash.com/photo-1513104890138-7c749659a591",
-  },
-  {
-    id: 3,
-    name: "Burger Hub",
-    cuisine: "Burgers",
-    rating: 4.4,
-    deliveryTime: "20-25 min",
-    image:
-      "https://images.unsplash.com/photo-1568901346375-23c9450c58cd",
-  },
-  {
-    id: 4,
-    name: "Dragon Bowl",
-    cuisine: "Chinese",
-    rating: 4.2,
-    deliveryTime: "30-35 min",
-    image:
-      "https://images.unsplash.com/photo-1563245372-f21724e3856d",
-  },
-  {
-    id: 5,
-    name: "Biryani Palace",
-    cuisine: "Biryani",
-    rating: 4.6,
-    deliveryTime: "25-30 min",
-    image:
-      "https://images.unsplash.com/photo-1697155406055-2db32d47ca07?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
-  },
-  {
-    id: 6,
-    name: "Taco Fiesta",
-    cuisine: "Mexican",
-    rating: 4.1,
-    deliveryTime: "30-40 min",
-    image:
-      "https://images.unsplash.com/photo-1551504734-5ee1c4a1479b",
-  },
-];
-
 function Restaurants() {
+  const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
   const [search, setSearch] = useState("");
   const [selectedCuisine, setSelectedCuisine] = useState("All");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    const fetchRestaurants = async () => {
+      try {
+        const data = await getRestaurants();
+        setRestaurants(data);
+      } catch (err) {
+        console.error(err);
+        setError("Failed to load restaurants");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchRestaurants();
+  }, []);
 
   const cuisines = [
     "All",
-    "Indian",
-    "Pizza",
-    "Burgers",
-    "Chinese",
-    "Biryani",
-    "Mexican",
+    ...Array.from(
+      new Set(restaurants.flatMap((restaurant) => restaurant.cuisine))
+    ),
   ];
 
   const filteredRestaurants = restaurants.filter((restaurant) => {
+    const searchText = search.toLowerCase();
+
     const matchesSearch =
-      restaurant.name.toLowerCase().includes(search.toLowerCase()) ||
-      restaurant.cuisine.toLowerCase().includes(search.toLowerCase());
+      restaurant.name.toLowerCase().includes(searchText) ||
+      restaurant.cuisine.some((cuisine) =>
+        cuisine.toLowerCase().includes(searchText)
+      );
 
     const matchesCuisine =
       selectedCuisine === "All" ||
-      restaurant.cuisine === selectedCuisine;
+      restaurant.cuisine.includes(selectedCuisine);
 
     return matchesSearch && matchesCuisine;
   });
 
-  return (
-    <div className="min-h-screen bg-gray-50">
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-gray-50">
+        <p className="text-lg font-semibold text-emerald-800">
+          Loading restaurants...
+        </p>
+      </div>
+    );
+  }
 
-
-      {/* Header */}
-      <section className="bg-white">
-        <div className="mx-auto max-w-7xl px-6 py-10">
-
-          <h1 className="text-3xl font-bold md:text-4xl">
-            Restaurants near you
-          </h1>
-
+  if (error) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <p className="text-xl font-bold text-red-500">{error}</p>
           <p className="mt-2 text-gray-500">
-            Discover the best food and restaurants around you.
+            Make sure your backend server is running.
           </p>
+        </div>
+      </div>
+    );
+  }
 
-          {/* Search */}
-          <div className="mt-6 flex max-w-2xl overflow-hidden rounded-xl border bg-gray-50">
-
-            <span className="flex items-center px-4 text-gray-400">
-              🔍
+  return (
+    <div className="min-h-screen bg-gray-50 text-gray-800">
+      {/* Clean, Fixed Top Navbar */}
+      <header className="sticky top-0 z-50 w-full border-b border-gray-200 bg-white px-6 py-3.5 shadow-xs lg:px-12">
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-6">
+          {/* Logo & Brand */}
+          <Link to="/" className="flex items-center gap-2 shrink-0">
+            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-emerald-600 text-lg font-bold text-white shadow-xs">
+              🍔
+            </div>
+            <span className="text-xl font-bold tracking-tight text-emerald-900">
+              Foodie
             </span>
+          </Link>
 
-            <input
-              type="text"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search restaurants or cuisines..."
-              className="w-full bg-transparent px-2 py-4 outline-none"
-            />
-
+          {/* Clean Navbar Search Input */}
+          <div className="w-full max-w-md">
+            <div className="flex items-center w-full rounded-xl bg-gray-100 px-3.5 py-2 focus-within:ring-2 focus-within:ring-emerald-600 focus-within:bg-white border border-transparent focus-within:border-emerald-600">
+              <span className="mr-2 text-sm text-gray-400">🔍</span>
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search restaurants or cuisines..."
+                className="w-full bg-transparent text-sm text-gray-800 outline-none placeholder-gray-400"
+              />
+            </div>
           </div>
 
+          {/* Navigation Right Actions */}
+          <div className="flex items-center gap-5 shrink-0">
+            <Link
+              to="/orders"
+              className="text-sm font-medium text-gray-600 hover:text-emerald-700"
+            >
+              Orders
+            </Link>
+            <div className="flex items-center gap-2 rounded-full bg-gray-100 px-3.5 py-1.5 text-xs font-semibold text-gray-700">
+              <span>🛒</span>
+              <span>Nihal</span>
+            </div>
+          </div>
         </div>
-      </section>
+      </header>
 
-      {/* Main */}
-      <main className="mx-auto max-w-7xl px-6 py-10">
-
-        {/* Filters */}
-        <div className="mb-8 flex gap-3 overflow-x-auto pb-2">
-
+      {/* Main Content Container */}
+      <main className="mx-auto max-w-7xl px-4 sm:px-8 lg:px-12 pt-6 pb-12">
+        {/* Cuisine Filters */}
+        <div className="mb-6 flex gap-2 overflow-x-auto pb-2 scrollbar-none">
           {cuisines.map((cuisine) => (
             <button
               key={cuisine}
               onClick={() => setSelectedCuisine(cuisine)}
-              className={`whitespace-nowrap rounded-full px-5 py-2.5 font-medium transition ${
+              className={`whitespace-nowrap rounded-full px-4 py-1.5 text-sm font-medium ${
                 selectedCuisine === cuisine
-                  ? "bg-orange-500 text-white"
-                  : "bg-white text-gray-600 shadow-sm hover:bg-orange-50"
+                  ? "bg-emerald-600 text-white shadow-xs"
+                  : "bg-white text-gray-600 border border-gray-200 hover:bg-emerald-50 hover:border-emerald-200"
               }`}
             >
               {cuisine}
             </button>
           ))}
-
         </div>
 
-        {/* Restaurant count */}
-        <div className="mb-6 flex items-center justify-between">
+        {/* Header Count & Filter */}
+        <div className="mb-6 flex items-center justify-between border-t border-gray-200 pt-6">
+          <h1 className="text-2xl font-bold text-gray-900">
+            {filteredRestaurants.length} Restaurants deliver to you
+          </h1>
 
-          <h2 className="text-xl font-bold">
-            {filteredRestaurants.length} restaurants
-          </h2>
-
-          <button className="rounded-lg border bg-white px-4 py-2 text-sm font-medium">
-            ⚙ Filters
+          <button className="flex items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3.5 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50 shadow-xs">
+            <span>⚙</span> Filters
           </button>
-
         </div>
 
-        {/* Restaurant cards */}
+        {/* Restaurant Grid */}
         {filteredRestaurants.length > 0 ? (
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
             {filteredRestaurants.map((restaurant) => (
-
-              <div
-                key={restaurant.id}
-                className="group overflow-hidden rounded-2xl bg-white shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-xl"
+              <Link
+                key={restaurant._id}
+                to={`/restaurants/${restaurant._id}`}
+                className="group flex flex-col overflow-hidden rounded-2xl bg-white shadow-xs border border-gray-100 hover:shadow-lg"
               >
-
-                {/* Image */}
-                <div className="relative h-52 overflow-hidden">
-
+                <div className="relative h-44 w-full overflow-hidden bg-gray-100">
                   <img
                     src={restaurant.image}
                     alt={restaurant.name}
-                    className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
+                    className="h-full w-full object-cover group-hover:scale-105"
                   />
-
-                  <span className="absolute bottom-3 left-3 rounded-lg bg-white px-3 py-1 text-sm font-semibold shadow">
-                    {restaurant.deliveryTime}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-80" />
+                  <span className="absolute bottom-2 left-3 rounded-md bg-white/90 px-2 py-0.5 text-xs font-bold text-gray-800 shadow-xs">
+                    {restaurant.deliveryTime} mins
                   </span>
-
                 </div>
 
-                {/* Details */}
-                <div className="p-5">
+                <div className="flex flex-1 flex-col justify-between p-4">
+                  <div>
+                    <h3 className="text-lg font-bold text-gray-900 group-hover:text-emerald-700">
+                      {restaurant.name}
+                    </h3>
 
-                  <h3 className="text-xl font-bold">
-                    {restaurant.name}
-                  </h3>
+                    <p className="mt-1 line-clamp-1 text-xs text-gray-500">
+                      {restaurant.cuisine.join(", ")}
+                    </p>
+                  </div>
 
-                  <p className="mt-1 text-gray-500">
-                    {restaurant.cuisine}
-                  </p>
-
-                  <div className="mt-4 flex items-center justify-between">
-
-                    <span className="rounded-md bg-green-600 px-2 py-1 text-sm font-semibold text-white">
+                  <div className="mt-3 flex items-center justify-between pt-2 border-t border-gray-50">
+                    <span className="flex items-center gap-1 rounded-md bg-emerald-600 px-2 py-0.5 text-xs font-bold text-white">
                       ★ {restaurant.rating}
                     </span>
 
-                    <Link
-                      to={`/restaurants/${restaurant.id}`}
-                      className="font-semibold text-orange-500 hover:text-orange-600"
-                    >
+                    <span className="text-xs font-semibold text-emerald-700 group-hover:underline">
                       View Menu →
-                    </Link>
-
+                    </span>
                   </div>
-
                 </div>
-
-              </div>
-
+              </Link>
             ))}
-
           </div>
         ) : (
-
-          /* Empty state */
-          <div className="rounded-2xl bg-white py-20 text-center">
-
-            <div className="text-6xl">🍽️</div>
-
-            <h3 className="mt-4 text-xl font-bold">
+          <div className="rounded-2xl bg-white py-16 text-center border border-gray-100 shadow-xs">
+            <div className="text-5xl">🍽️</div>
+            <h3 className="mt-4 text-lg font-bold text-gray-800">
               No restaurants found
             </h3>
-
-            <p className="mt-2 text-gray-500">
-              Try searching for something else.
+            <p className="mt-1 text-sm text-gray-500">
+              Try searching for standard cuisines or alternate dish names.
             </p>
-
           </div>
-
         )}
-
       </main>
-
     </div>
   );
 }
