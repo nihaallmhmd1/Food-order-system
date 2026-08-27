@@ -96,7 +96,24 @@ export const createOrder = async (
       });
 
       if (!foodItem) {
-        res.status(404).json({
+        // Check if the item exists but belongs to a different restaurant
+       const itemFromAnotherRestaurant = await FoodItem.findOne({
+         _id: item.foodItemId,
+         isActive: true,
+         isAvailable: true,
+       });
+
+       if (
+         itemFromAnotherRestaurant &&
+         itemFromAnotherRestaurant.restaurantId.toString() !== restaurantId
+      ) {
+         res.status(400).json({
+           success: false,
+           message: "You can't order food items from different restaurants",
+         });
+         return;
+       }
+          res.status(404).json({
           success: false,
           message: `Food item ${item.foodItemId} not found or unavailable`,
         });

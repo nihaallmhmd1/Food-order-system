@@ -8,6 +8,7 @@ import orderRoutes from "./routes/orderRoutes";
 import authRoutes from "./routes/authRoutes";
 import searchRoutes from "./routes/searchRoutes";
 import userRoutes from "./routes/userRoutes";
+import dashboardRoutes from "./routes/dashboardRoutes";
 
 const app = express();
 
@@ -34,5 +35,6 @@ app.use("/api/orders", orderRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/search", searchRoutes);
 app.use("/api/users", userRoutes);
+app.use("/api/admin/dashboard", dashboardRoutes);
 
 export default app;

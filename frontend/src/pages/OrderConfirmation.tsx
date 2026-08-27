@@ -32,17 +32,6 @@ function OrderConfirmation() {
   if (!order) {
     return (
       <div className="min-h-screen bg-gray-50">
-        {/* Navbar */}
-        <nav className="border-b bg-white">
-          <div className="mx-auto max-w-7xl px-6 py-4">
-            <Link
-              to="/"
-              className="text-2xl font-bold text-emerald-600"
-            >
-              Foodie
-            </Link>
-          </div>
-        </nav>
 
         <main className="flex min-h-[80vh] items-center justify-center px-6">
           <div className="w-full max-w-lg rounded-3xl bg-white p-8 text-center shadow-sm md:p-10">

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { getRestaurants } from "../api/restaurantApi";
 
 type Restaurant = {
@@ -14,8 +14,9 @@ type Restaurant = {
 };
 
 function Restaurants() {
+  const [searchParams] = useSearchParams();
   const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState(searchParams.get("search") ?? "");
   const [selectedCuisine, setSelectedCuisine] = useState("All");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -35,6 +36,14 @@ function Restaurants() {
 
     fetchRestaurants();
   }, []);
+
+  // Keep search state in sync if the navbar sends a new ?search= value
+  useEffect(() => {
+    const urlSearch = searchParams.get("search");
+    if (urlSearch !== null) {
+      setSearch(urlSearch);
+    }
+  }, [searchParams]);
 
   const cuisines = [
     "All",
@@ -84,49 +93,6 @@ function Restaurants() {
 
   return (
     <div className="min-h-screen bg-gray-50 text-gray-800">
-      {/* Clean, Fixed Top Navbar */}
-      <header className="sticky top-0 z-50 w-full border-b border-gray-200 bg-white px-6 py-3.5 shadow-xs lg:px-12">
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-6">
-          {/* Logo & Brand */}
-          <Link to="/" className="flex items-center gap-2 shrink-0">
-            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-emerald-600 text-lg font-bold text-white shadow-xs">
-              🍔
-            </div>
-            <span className="text-xl font-bold tracking-tight text-emerald-900">
-              Foodie
-            </span>
-          </Link>
-
-          {/* Clean Navbar Search Input */}
-          <div className="w-full max-w-md">
-            <div className="flex items-center w-full rounded-xl bg-gray-100 px-3.5 py-2 focus-within:ring-2 focus-within:ring-emerald-600 focus-within:bg-white border border-transparent focus-within:border-emerald-600">
-              <span className="mr-2 text-sm text-gray-400">🔍</span>
-              <input
-                type="text"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search restaurants or cuisines..."
-                className="w-full bg-transparent text-sm text-gray-800 outline-none placeholder-gray-400"
-              />
-            </div>
-          </div>
-
-          {/* Navigation Right Actions */}
-          <div className="flex items-center gap-5 shrink-0">
-            <Link
-              to="/orders"
-              className="text-sm font-medium text-gray-600 hover:text-emerald-700"
-            >
-              Orders
-            </Link>
-            <div className="flex items-center gap-2 rounded-full bg-gray-100 px-3.5 py-1.5 text-xs font-semibold text-gray-700">
-              <span>🛒</span>
-              <span>Nihal</span>
-            </div>
-          </div>
-        </div>
-      </header>
-
       {/* Main Content Container */}
       <main className="mx-auto max-w-7xl px-4 sm:px-8 lg:px-12 pt-6 pb-12">
         {/* Cuisine Filters */}

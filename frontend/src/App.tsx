@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 
 import Navbar from "./components/Navbar";
+import HomeNavbar from "./components/HomeNavbar";
 
 import Home from "./pages/Home";
 import Login from "./pages/Login";
@@ -23,15 +24,13 @@ import AdminCategories from "./admin/pages/AdminCategories";
 function MainLayout() {
   const location = useLocation();
 
-  // Hide customer navbar on Home, Restaurants and Admin pages
-  const hideNavbar =
-    location.pathname === "/" ||
-    location.pathname === "/restaurants" ||
-    location.pathname.startsWith("/admin");
+  const isHome = location.pathname === "/";
+  const isAdmin = location.pathname.startsWith("/admin");
 
   return (
     <div className="min-h-screen bg-white">
-      {!hideNavbar && <Navbar />}
+      {isHome && <HomeNavbar />}
+      {!isHome && !isAdmin && <Navbar />}
 
       <main>
         <Routes>

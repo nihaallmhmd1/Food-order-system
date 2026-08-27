@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
-import Navbar from "../components/Navbar"; // Adjust import path if needed
+import HomeNavbar from "../components/HomeNavbar";
 import { getCategories } from "../api/categoryApi";
 import { getRestaurants } from "../api/restaurantApi";
 import { searchAll } from "../api/searchApi";
@@ -175,7 +175,7 @@ useEffect(() => {
 
         {/* Navbar on top layer */}
         <header className="relative z-40 w-full max-w-[1100px] mx-auto">
-          <Navbar />
+          <HomeNavbar />
         </header>
 
         {/* Hero Content */}

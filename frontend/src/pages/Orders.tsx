@@ -26,6 +26,9 @@ type Order = {
   totalAmount: number;
   paymentMethod: string;
   paymentStatus: string;
+  deliveryAddress?: string;
+  customerName?: string;
+  customerPhone?: string;
   orderStatus:
     | "PLACED"
     | "CONFIRMED"
@@ -43,6 +46,7 @@ function Orders() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchOrders = async () => {
@@ -71,6 +75,10 @@ function Orders() {
 
     fetchOrders();
   }, [user]);
+
+  const toggleDetails = (orderId: string) => {
+    setExpandedId((current) => (current === orderId ? null : orderId));
+  };
 
   const getRestaurantName = (restaurantId: Order["restaurantId"]) => {
     if (typeof restaurantId === "object" && restaurantId !== null) {
@@ -111,6 +119,19 @@ function Orders() {
       case "DELIVERED":
         return "bg-green-100 text-green-700";
       case "CANCELLED":
+        return "bg-red-100 text-red-700";
+      default:
+        return "bg-gray-100 text-gray-700";
+    }
+  };
+
+  const getPaymentStatusStyle = (status: string) => {
+    switch (status?.toUpperCase()) {
+      case "PAID":
+        return "bg-green-100 text-green-700";
+      case "PENDING":
+        return "bg-amber-100 text-amber-700";
+      case "FAILED":
         return "bg-red-100 text-red-700";
       default:
         return "bg-gray-100 text-gray-700";
@@ -207,134 +228,200 @@ function Orders() {
         ) : (
           /* Orders List */
           <div className="space-y-5">
-            {orders.map((order) => (
-              <div
-                key={order._id}
-                className="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm transition hover:shadow-md"
-              >
-                {/* Order Header */}
-                <div className="flex flex-col gap-4 border-b border-gray-100 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
-                  <div>
-                    <div className="flex flex-wrap items-center gap-3">
-                      <h2 className="text-lg font-bold text-gray-900">
-                        {getRestaurantName(order.restaurantId)}
-                      </h2>
-                      <span
-                        className={`rounded-full px-3 py-1 text-xs font-bold ${getStatusStyle(
-                          order.orderStatus
-                        )}`}
-                      >
-                        {getStatusLabel(order.orderStatus)}
-                      </span>
+            {orders.map((order) => {
+              const isExpanded = expandedId === order._id;
+
+              return (
+                <div
+                  key={order._id}
+                  className="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm transition hover:shadow-md"
+                >
+                  {/* Order Header */}
+                  <div className="flex flex-col gap-4 border-b border-gray-100 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
+                    <div>
+                      <div className="flex flex-wrap items-center gap-3">
+                        <h2 className="text-lg font-bold text-gray-900">
+                          {getRestaurantName(order.restaurantId)}
+                        </h2>
+                        <span
+                          className={`rounded-full px-3 py-1 text-xs font-bold ${getStatusStyle(
+                            order.orderStatus
+                          )}`}
+                        >
+                          {getStatusLabel(order.orderStatus)}
+                        </span>
+                      </div>
+
+                      <p className="mt-2 text-sm text-gray-500">
+                        Order #{order._id}
+                      </p>
+
+                      {order.createdAt && (
+                        <p className="mt-1 text-sm text-gray-400">
+                          {new Date(order.createdAt).toLocaleString("en-IN", {
+                            day: "numeric",
+                            month: "short",
+                            year: "numeric",
+                            hour: "numeric",
+                            minute: "2-digit",
+                          })}
+                        </p>
+                      )}
                     </div>
 
-                    <p className="mt-2 text-sm text-gray-500">
-                      Order #{order._id}
-                    </p>
-
-                    {order.createdAt && (
-                      <p className="mt-1 text-sm text-gray-400">
-                        {new Date(order.createdAt).toLocaleString("en-IN", {
-                          day: "numeric",
-                          month: "short",
-                          year: "numeric",
-                          hour: "numeric",
-                          minute: "2-digit",
-                        })}
+                    {/* Total */}
+                    <div className="text-left sm:text-right">
+                      <p className="text-sm text-gray-500">Total</p>
+                      <p className="text-xl font-extrabold text-gray-900">
+                        ₹{order.totalAmount.toFixed(2)}
                       </p>
-                    )}
+                    </div>
                   </div>
 
-                  {/* Total */}
-                  <div className="text-left sm:text-right">
-                    <p className="text-sm text-gray-500">Total</p>
-                    <p className="text-xl font-extrabold text-gray-900">
-                      ₹{order.totalAmount.toFixed(2)}
-                    </p>
-                  </div>
-                </div>
+                  {/* Order Items */}
+                  <div className="p-5 sm:p-6">
+                    <div className="space-y-4">
+                      {order.items.map((item, index) => (
+                        <div
+                          key={`${order._id}-${index}`}
+                          className="flex items-center justify-between gap-4"
+                        >
+                          <div className="flex min-w-0 items-center gap-3">
+                            {item.image ? (
+                              <img
+                                src={item.image}
+                                alt={item.name}
+                                className="h-12 w-12 shrink-0 rounded-xl object-cover"
+                              />
+                            ) : (
+                              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-lg">
+                                🍽️
+                              </div>
+                            )}
 
-                {/* Order Items */}
-                <div className="p-5 sm:p-6">
-                  <div className="space-y-4">
-                    {order.items.map((item, index) => (
-                      <div
-                        key={`${order._id}-${index}`}
-                        className="flex items-center justify-between gap-4"
-                      >
-                        <div className="flex min-w-0 items-center gap-3">
-                          {item.image ? (
-                            <img
-                              src={item.image}
-                              alt={item.name}
-                              className="h-12 w-12 shrink-0 rounded-xl object-cover"
-                            />
-                          ) : (
-                            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-lg">
-                              🍽️
+                            <div className="min-w-0">
+                              <p className="truncate font-semibold text-gray-800">
+                                {item.name}
+                              </p>
+                              <p className="text-sm text-gray-400">
+                                Qty: {item.quantity}
+                              </p>
                             </div>
-                          )}
-
-                          <div className="min-w-0">
-                            <p className="truncate font-semibold text-gray-800">
-                              {item.name}
-                            </p>
-                            <p className="text-sm text-gray-400">
-                              Qty: {item.quantity}
-                            </p>
                           </div>
+
+                          <p className="shrink-0 font-semibold text-gray-800">
+                            ₹{(item.price * item.quantity).toFixed(2)}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Order Summary */}
+                    <div className="mt-6 border-t border-gray-100 pt-5">
+                      <div className="space-y-2 text-sm">
+                        <div className="flex justify-between text-gray-500">
+                          <span>Subtotal</span>
+                          <span>₹{order.subtotal.toFixed(2)}</span>
                         </div>
 
-                        <p className="shrink-0 font-semibold text-gray-800">
-                          ₹{(item.price * item.quantity).toFixed(2)}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
+                        <div className="flex justify-between text-gray-500">
+                          <span>Delivery Fee</span>
+                          <span>
+                            {order.deliveryFee === 0
+                              ? "FREE"
+                              : `₹${order.deliveryFee.toFixed(2)}`}
+                          </span>
+                        </div>
 
-                  {/* Order Summary */}
-                  <div className="mt-6 border-t border-gray-100 pt-5">
-                    <div className="space-y-2 text-sm">
-                      <div className="flex justify-between text-gray-500">
-                        <span>Subtotal</span>
-                        <span>₹{order.subtotal.toFixed(2)}</span>
+                        <div className="flex justify-between border-t border-gray-100 pt-3 text-base font-bold text-gray-900">
+                          <span>Total</span>
+                          <span className="text-emerald-600">
+                            ₹{order.totalAmount.toFixed(2)}
+                          </span>
+                        </div>
                       </div>
+                    </div>
 
-                      <div className="flex justify-between text-gray-500">
-                        <span>Delivery Fee</span>
+                    {/* Expandable Details */}
+                    {isExpanded && (
+                      <div className="mt-6 space-y-3 rounded-xl bg-gray-50 p-5 text-sm">
+                        <div className="flex items-center justify-between">
+                          <span className="text-gray-500">Full Order ID</span>
+                          <span className="font-mono text-xs text-gray-700">
+                            {order._id}
+                          </span>
+                        </div>
+
+                        <div className="flex items-center justify-between">
+                          <span className="text-gray-500">Payment Method</span>
+                          <span className="font-semibold text-gray-800">
+                            {order.paymentMethod}
+                          </span>
+                        </div>
+
+                        <div className="flex items-center justify-between">
+                          <span className="text-gray-500">Payment Status</span>
+                          <span
+                            className={`rounded-full px-3 py-1 text-xs font-bold ${getPaymentStatusStyle(
+                              order.paymentStatus
+                            )}`}
+                          >
+                            {order.paymentStatus || "N/A"}
+                          </span>
+                        </div>
+
+                        {order.customerName && (
+                          <div className="flex items-center justify-between">
+                            <span className="text-gray-500">Customer</span>
+                            <span className="font-semibold text-gray-800">
+                              {order.customerName}
+                            </span>
+                          </div>
+                        )}
+
+                        {order.customerPhone && (
+                          <div className="flex items-center justify-between">
+                            <span className="text-gray-500">Phone</span>
+                            <span className="font-semibold text-gray-800">
+                              {order.customerPhone}
+                            </span>
+                          </div>
+                        )}
+
+                        {order.deliveryAddress && (
+                          <div className="flex items-start justify-between gap-4">
+                            <span className="shrink-0 text-gray-500">
+                              Delivery Address
+                            </span>
+                            <span className="text-right font-semibold text-gray-800">
+                              {order.deliveryAddress}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Footer Action */}
+                    <div className="mt-6 flex flex-col gap-3 border-t border-gray-100 pt-5 sm:flex-row sm:items-center sm:justify-between">
+                      <div className="flex gap-4 text-sm text-gray-500">
                         <span>
-                          {order.deliveryFee === 0
-                            ? "FREE"
-                            : `₹${order.deliveryFee.toFixed(2)}`}
+                          {order.items.length}{" "}
+                          {order.items.length === 1 ? "item" : "items"}
                         </span>
+                        <span>Payment: {order.paymentMethod}</span>
                       </div>
 
-                      <div className="flex justify-between border-t border-gray-100 pt-3 text-base font-bold text-gray-900">
-                        <span>Total</span>
-                        <span className="text-emerald-600">
-                          ₹{order.totalAmount.toFixed(2)}
-                        </span>
-                      </div>
+                      <button
+                        onClick={() => toggleDetails(order._id)}
+                        className="rounded-full bg-gray-100 px-5 py-2 text-sm font-bold text-gray-700 transition hover:bg-gray-200"
+                      >
+                        {isExpanded ? "Hide Details" : "View Details"}
+                      </button>
                     </div>
-                  </div>
-
-                  {/* Footer Action */}
-                  <div className="mt-6 flex flex-col gap-3 border-t border-gray-100 pt-5 sm:flex-row sm:items-center sm:justify-between">
-                    <div className="flex gap-4 text-sm text-gray-500">
-                      <span>
-                        {order.items.length}{" "}
-                        {order.items.length === 1 ? "item" : "items"}
-                      </span>
-                      <span>Payment: {order.paymentMethod}</span>
-                    </div>
-
-                    <button className="rounded-full bg-gray-100 px-5 py-2 text-sm font-bold text-gray-700 transition hover:bg-gray-200">
-                      View Details
-                    </button>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </main>
