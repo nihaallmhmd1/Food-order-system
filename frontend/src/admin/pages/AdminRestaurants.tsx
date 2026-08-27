@@ -210,7 +210,7 @@ const handleDelete = async (id: string) => {
   return (
     <div>
       {/* Header */}
-      <div className="mb-6 flex items-center justify-between">
+      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">
             Restaurants
@@ -223,7 +223,7 @@ const handleDelete = async (id: string) => {
 
         <button
           onClick={() => setShowForm(!showForm)}
-          className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700"
+          className="w-full rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700 sm:w-auto"
         >
           {showForm ? "Cancel" : "+ Add Restaurant"}
         </button>
@@ -475,7 +475,7 @@ const handleDelete = async (id: string) => {
         </div>
       ) : (
         <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
-          <div className="overflow-x-auto">
+          <div className="hidden overflow-x-auto md:block">
             <table className="w-full text-left text-sm">
               <thead className="border-b border-gray-200 bg-gray-50">
                 <tr>
@@ -572,6 +572,71 @@ const handleDelete = async (id: string) => {
                 )}
               </tbody>
             </table>
+          </div>
+
+          {/* Mobile Cards */}
+          <div className="space-y-3 p-4 md:hidden">
+            {restaurants.length === 0 ? (
+              <p className="py-6 text-center text-gray-500">No restaurants found.</p>
+            ) : (
+              restaurants.map((restaurant) => (
+                <div
+                  key={restaurant._id}
+                  className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm"
+                >
+                  <div className="flex gap-3">
+                    {restaurant.image ? (
+                      <img
+                        src={restaurant.image}
+                        alt={restaurant.name}
+                        className="h-16 w-16 shrink-0 rounded-lg object-cover"
+                      />
+                    ) : (
+                      <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-lg bg-emerald-100 text-2xl">
+                        🍽️
+                      </div>
+                    )}
+
+                    <div className="min-w-0 flex-1">
+                      <p className="font-semibold text-gray-900">{restaurant.name}</p>
+                      <p className="mt-0.5 line-clamp-2 text-xs text-gray-500">
+                        {restaurant.description}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="mt-3 grid grid-cols-2 gap-2 border-t border-gray-100 pt-3 text-xs text-gray-600">
+                    <p>
+                      <span className="text-gray-400">Cuisine: </span>
+                      {restaurant.cuisine || "—"}
+                    </p>
+                    <p>
+                      <span className="text-gray-400">Delivery: </span>
+                      {restaurant.deliveryTime || "—"}
+                    </p>
+                    <p className="col-span-2 truncate">
+                      <span className="text-gray-400">Address: </span>
+                      {restaurant.address || "—"}
+                    </p>
+                  </div>
+
+                  <div className="mt-3 flex justify-end gap-2 border-t border-gray-100 pt-3">
+                    <button
+                      onClick={() => handleEdit(restaurant)}
+                      className="rounded-md bg-blue-50 px-3 py-1.5 text-xs font-medium text-blue-600 hover:bg-blue-100"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => handleDelete(restaurant._id)}
+                      className="rounded-md bg-red-50 px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-100"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
 
           <div className="border-t border-gray-200 px-6 py-4">

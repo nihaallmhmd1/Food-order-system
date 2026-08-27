@@ -177,7 +177,7 @@ function AdminCategories() {
         {/* --------------------------------
             Page Header
         -------------------------------- */}
-        <div className="mb-8 flex items-center justify-between">
+        <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">
               Categories
@@ -192,7 +192,7 @@ function AdminCategories() {
           <button
             type="button"
             onClick={handleAddCategory}
-            className="rounded-lg bg-emerald-600 px-5 py-3 font-medium text-white shadow-sm transition hover:bg-emerald-700"
+            className="w-full rounded-lg bg-emerald-600 px-5 py-3 font-medium text-white shadow-sm transition hover:bg-emerald-700 sm:w-auto"
           >
             + Add Category
           </button>
@@ -241,8 +241,8 @@ function AdminCategories() {
               </button>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
+            <div className="hidden overflow-x-auto md:block">
+              <table className="w-full"> 
 
                 <thead className="bg-gray-50">
                   <tr>
@@ -342,6 +342,58 @@ function AdminCategories() {
               </table>
             </div>
           )}
+
+          {/* Mobile Cards */}
+          <div className="space-y-3 p-4 md:hidden">
+            {categories.map((category) => {
+              const categoryImage = category.image || category.imageUrl;
+              return (
+                <div
+                  key={category._id}
+                  className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm"
+                >
+                  <div className="flex items-center gap-3">
+                    {categoryImage ? (
+                      <img
+                        src={categoryImage}
+                        alt={category.name}
+                        className="h-14 w-14 shrink-0 rounded-lg object-cover"
+                      />
+                    ) : (
+                      <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg bg-emerald-50 text-lg font-semibold text-emerald-600">
+                        {category.name.charAt(0).toUpperCase()}
+                      </div>
+                    )}
+
+                    <div className="min-w-0 flex-1">
+                      <p className="font-medium text-gray-900">{category.name}</p>
+                      <p className="truncate font-mono text-xs text-gray-500">
+                        {category._id}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="mt-3 flex justify-end gap-2 border-t border-gray-100 pt-3">
+                    <button
+                      type="button"
+                      onClick={() => handleEdit(category)}
+                      className="rounded-lg bg-blue-50 px-4 py-2 text-sm font-medium text-blue-600 transition hover:bg-blue-100"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleDelete(category._id)}
+                      className="rounded-lg bg-red-50 px-4 py-2 text-sm font-medium text-red-600 transition hover:bg-red-100"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
         </div>
       </div>
 
