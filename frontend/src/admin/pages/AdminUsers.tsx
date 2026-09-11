@@ -1,16 +1,29 @@
 import { useEffect, useMemo, useState } from "react";
 import {
+  createUser,
   deleteUser,
   getAllUsers,
   updateUserRole,
   type AdminUser,
 } from "../../api/userApi";
+import { getAllRoles, type Role } from "../../api/roleApi";
+import { getRestaurants } from "../../api/restaurantApi";
 
 function AdminUsers() {
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [roles, setRoles] = useState<Role[]>([]);
+  const [restaurants, setRestaurants] = useState<{ _id: string; name: string }[]>([]);
+  const [pendingRoleIds, setPendingRoleIds] = useState<Record<string, string>>({});
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [newName, setNewName] = useState("");
+  const [newEmail, setNewEmail] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [newRoleId, setNewRoleId] = useState("");
+  const [newRestaurantId, setNewRestaurantId] = useState("");
+  const [creating, setCreating] = useState(false);
 
   const fetchUsers = async () => {
     try {
@@ -30,6 +43,16 @@ function AdminUsers() {
 
   useEffect(() => {
     fetchUsers();
+    getAllRoles()
+      .then(setRoles)
+      .catch((err: unknown) => {
+        setError(err instanceof Error ? err.message : "Failed to load roles");
+      });
+    getRestaurants()
+      .then(setRestaurants)
+      .catch((err: unknown) => {
+        setError(err instanceof Error ? err.message : "Failed to load restaurants");
+      });
   }, []);
 
   const filteredUsers = useMemo(() => {
@@ -49,18 +72,30 @@ function AdminUsers() {
 
   const handleRoleChange = async (
     userId: string,
-    role: "customer" | "admin"
+    roleId: string,
+    assignedRestaurantId?: string | null
   ) => {
     try {
       setError("");
 
-      const updatedUser = await updateUserRole(userId, role);
+      const selectedRole = roles.find((role) => role._id === roleId);
+      if (selectedRole?.name === "restaurantadmin" && !assignedRestaurantId) {
+        setError("Select a restaurant for the restaurant admin");
+        return;
+      }
+
+      const updatedUser = await updateUserRole(userId, roleId, assignedRestaurantId);
 
       setUsers((currentUsers) =>
         currentUsers.map((user) =>
           user._id === userId ? updatedUser : user
         )
       );
+      setPendingRoleIds((current) => {
+        const next = { ...current };
+        delete next[userId];
+        return next;
+      });
     } catch (err) {
       setError(
         err instanceof Error
@@ -68,6 +103,34 @@ function AdminUsers() {
           : "Failed to update user role"
       );
     }
+  };
+
+  const getRoleId = (roleName: string) =>
+    roles.find((role) => role.name === roleName)?._id || "";
+
+  const formatRoleName = (name: string) =>
+    name.charAt(0).toUpperCase() + name.slice(1);
+
+  const roleNeedsRestaurant = (roleName: string) => roleName === "restaurantadmin";
+
+  const selectedRoleId = (user: AdminUser) =>
+    pendingRoleIds[user._id] || getRoleId(user.role);
+
+  const selectedRoleName = (user: AdminUser) =>
+    roles.find((role) => role._id === selectedRoleId(user))?.name || user.role;
+
+  const handleRoleSelection = (user: AdminUser, roleId: string) => {
+    setPendingRoleIds((current) => ({ ...current, [user._id]: roleId }));
+    const selectedRole = roles.find((role) => role._id === roleId);
+    if (selectedRole?.name === "restaurantadmin") {
+      if (user.restaurantId) {
+        handleRoleChange(user._id, roleId, user.restaurantId);
+      } else {
+        setError("Select a restaurant for the restaurant admin");
+      }
+      return;
+    }
+    handleRoleChange(user._id, roleId, null);
   };
 
   const handleDelete = async (user: AdminUser) => {
@@ -94,6 +157,41 @@ function AdminUsers() {
     }
   };
 
+  const handleCreateUser = async (event: React.FormEvent) => {
+    event.preventDefault();
+    const selectedRole = roles.find((role) => role._id === newRoleId);
+    if (!selectedRole) {
+      setError("Select a role");
+      return;
+    }
+    if (selectedRole.name === "restaurantadmin" && !newRestaurantId) {
+      setError("Select a restaurant for the restaurant admin");
+      return;
+    }
+    try {
+      setCreating(true);
+      setError("");
+      const user = await createUser({
+        name: newName,
+        email: newEmail,
+        password: newPassword,
+        roleId: newRoleId,
+        restaurantId: selectedRole.name === "restaurantadmin" ? newRestaurantId : null,
+      });
+      setUsers((current) => [user, ...current]);
+      setShowCreateModal(false);
+      setNewName("");
+      setNewEmail("");
+      setNewPassword("");
+      setNewRoleId("");
+      setNewRestaurantId("");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to create user");
+    } finally {
+      setCreating(false);
+    }
+  };
+
   const formatDate = (date: string) => {
     return new Date(date).toLocaleDateString("en-IN", {
       day: "2-digit",
@@ -111,7 +209,7 @@ function AdminUsers() {
     <div className="min-h-screen bg-slate-50 p-4 sm:p-6 lg:p-8">
       <div className="mx-auto max-w-7xl">
         {/* Header */}
-        <div className="mb-6">
+        <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <h1 className="text-2xl font-bold text-slate-900">
             Users
           </h1>
@@ -146,6 +244,13 @@ function AdminUsers() {
               {adminCount}
             </p>
           </div>
+          <button
+            type="button"
+            onClick={() => setShowCreateModal(true)}
+            className="rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-emerald-700"
+          >
+            Add User
+          </button>
         </div>
 
         {/* Search */}
@@ -243,14 +348,9 @@ function AdminUsers() {
 
                         <td className="px-6 py-4">
                           <select
-                            value={user.role}
+                            value={selectedRoleId(user)}
                             onChange={(e) =>
-                              handleRoleChange(
-                                user._id,
-                                e.target.value as
-                                  | "customer"
-                                  | "admin"
-                              )
+                              handleRoleSelection(user, e.target.value)
                             }
                             className={`rounded-full border px-3 py-1.5 text-xs font-semibold outline-none ${
                               user.role === "admin"
@@ -258,12 +358,32 @@ function AdminUsers() {
                                 : "border-emerald-200 bg-emerald-50 text-emerald-700"
                             }`}
                           >
-                            <option value="customer">
-                              Customer
-                            </option>
-
-                            <option value="admin">Admin</option>
+                            {roles.map((role) => (
+                              <option key={role._id} value={role._id}>
+                                {formatRoleName(role.name)}
+                              </option>
+                            ))}
                           </select>
+                          {roleNeedsRestaurant(selectedRoleName(user)) && (
+                            <select
+                              value={user.restaurantId || ""}
+                              onChange={(e) =>
+                                handleRoleChange(
+                                  user._id,
+                                  selectedRoleId(user),
+                                  e.target.value
+                                )
+                              }
+                              className="ml-2 rounded-lg border border-slate-200 px-2 py-1.5 text-xs outline-none focus:border-emerald-500"
+                            >
+                              <option value="">Select restaurant</option>
+                              {restaurants.map((restaurant) => (
+                                <option key={restaurant._id} value={restaurant._id}>
+                                  {restaurant.name}
+                                </option>
+                              ))}
+                            </select>
+                          )}
                         </td>
 
                         <td className="px-6 py-4 text-sm text-slate-500">
@@ -317,23 +437,38 @@ function AdminUsers() {
                       </p>
 
                       <select
-                        value={user.role}
+                        value={selectedRoleId(user)}
                         onChange={(e) =>
-                          handleRoleChange(
-                            user._id,
-                            e.target.value as
-                              | "customer"
-                              | "admin"
-                          )
+                          handleRoleSelection(user, e.target.value)
                         }
                         className="mt-1 w-full rounded-lg border border-slate-200 px-2 py-2 text-sm outline-none focus:border-emerald-500"
                       >
-                        <option value="customer">
-                          Customer
-                        </option>
-
-                        <option value="admin">Admin</option>
+                        {roles.map((role) => (
+                          <option key={role._id} value={role._id}>
+                            {formatRoleName(role.name)}
+                          </option>
+                        ))}
                       </select>
+                      {roleNeedsRestaurant(selectedRoleName(user)) && (
+                        <select
+                          value={user.restaurantId || ""}
+                          onChange={(e) =>
+                            handleRoleChange(
+                              user._id,
+                              selectedRoleId(user),
+                              e.target.value
+                            )
+                          }
+                          className="mt-2 w-full rounded-lg border border-slate-200 px-2 py-2 text-sm outline-none focus:border-emerald-500"
+                        >
+                          <option value="">Select restaurant</option>
+                          {restaurants.map((restaurant) => (
+                            <option key={restaurant._id} value={restaurant._id}>
+                              {restaurant.name}
+                            </option>
+                          ))}
+                        </select>
+                      )}
                     </div>
 
                     <div>
@@ -359,6 +494,30 @@ function AdminUsers() {
           </>
         )}
       </div>
+      {showCreateModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <form onSubmit={handleCreateUser} className="w-full max-w-md space-y-4 rounded-2xl bg-white p-6 shadow-xl">
+            <h2 className="text-xl font-bold text-slate-900">Create User</h2>
+            <input required value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="Full name" className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm" />
+            <input required type="email" value={newEmail} onChange={(e) => setNewEmail(e.target.value)} placeholder="Email" className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm" />
+            <input required minLength={6} type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="Password" className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm" />
+            <select required value={newRoleId} onChange={(e) => setNewRoleId(e.target.value)} className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm">
+              <option value="">Select role</option>
+              {roles.map((role) => <option key={role._id} value={role._id}>{formatRoleName(role.name)}</option>)}
+            </select>
+            {roles.find((role) => role._id === newRoleId)?.name === "restaurantadmin" && (
+              <select required value={newRestaurantId} onChange={(e) => setNewRestaurantId(e.target.value)} className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm">
+                <option value="">Select restaurant</option>
+                {restaurants.map((restaurant) => <option key={restaurant._id} value={restaurant._id}>{restaurant.name}</option>)}
+              </select>
+            )}
+            <div className="flex justify-end gap-3">
+              <button type="button" onClick={() => setShowCreateModal(false)} className="rounded-lg px-4 py-2 text-sm text-slate-600 hover:bg-slate-100">Cancel</button>
+              <button type="submit" disabled={creating} className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white disabled:opacity-60">{creating ? "Creating..." : "Create User"}</button>
+            </div>
+          </form>
+        </div>
+      )}
     </div>
   );
 }

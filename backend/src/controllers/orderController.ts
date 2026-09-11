@@ -5,7 +5,7 @@ import Order from "../models/Order";
 import FoodItem from "../models/FoodItem";
 import Restaurant from "../models/Restaurant";
 
-import { AuthRequest } from "../middleware/authMiddleware";
+import { AuthRequest, getRoleName } from "../middleware/authMiddleware";
 
 // POST /api/orders
 // Create order (Customer / Admin)
@@ -33,8 +33,10 @@ export const createOrder = async (
       paymentMethod,
     } = req.body;
 
+    const roleName = getRoleName(req);
+    const tenantId = roleName === "restaurantadmin" ? req.user.restaurantId : null;
     if (
-      !restaurantId ||
+      (!restaurantId && !tenantId) ||
       !customerName ||
       !customerPhone ||
       !deliveryAddress ||
@@ -50,7 +52,12 @@ export const createOrder = async (
       return;
     }
 
-    if (!mongoose.Types.ObjectId.isValid(restaurantId)) {
+    if (tenantId && restaurantId && restaurantId !== tenantId) {
+      res.status(403).json({ success: false, message: "Access denied" });
+      return;
+    }
+    const targetRestaurantId = tenantId || restaurantId;
+    if (!targetRestaurantId || !mongoose.Types.ObjectId.isValid(targetRestaurantId)) {
       res.status(400).json({
         success: false,
         message: "Invalid restaurantId",
@@ -59,7 +66,7 @@ export const createOrder = async (
     }
 
     const restaurant = await Restaurant.findOne({
-      _id: restaurantId,
+      _id: targetRestaurantId,
       isActive: true,
     });
 
@@ -90,7 +97,7 @@ export const createOrder = async (
 
       const foodItem = await FoodItem.findOne({
         _id: item.foodItemId,
-        restaurantId,
+        restaurantId: targetRestaurantId,
         isActive: true,
         isAvailable: true,
       });
@@ -105,7 +112,7 @@ export const createOrder = async (
 
        if (
          itemFromAnotherRestaurant &&
-         itemFromAnotherRestaurant.restaurantId.toString() !== restaurantId
+         itemFromAnotherRestaurant.restaurantId.toString() !== targetRestaurantId
       ) {
          res.status(400).json({
            success: false,
@@ -137,7 +144,7 @@ export const createOrder = async (
 
     const order = await Order.create({
       userId,
-      restaurantId,
+      restaurantId: targetRestaurantId,
       customerName,
       customerPhone,
       deliveryAddress,
@@ -214,7 +221,22 @@ export const getOrders = async (
       return;
     }
 
-    const filter = req.user.role === "admin" ? {} : { userId: req.user.userId };
+    const roleName =
+      typeof req.user.role === "object" && req.user.role !== null
+        ? req.user.role.name
+        : req.user.role;
+    if (roleName === "restaurantadmin" && !req.user.restaurantId) {
+      res.status(403).json({ success: false, message: "A restaurant assignment is required" });
+      return;
+    }
+    if (roleName === "restaurantadmin" && !req.user.permissions?.includes("orders")) {
+      res.status(403).json({ success: false, message: "Orders access is not permitted" });
+      return;
+    }
+    const canViewAllOrders = roleName === "admin" || req.user.permissions?.includes("orders");
+    const filter = canViewAllOrders
+      ? (roleName === "restaurantadmin" ? { restaurantId: req.user.restaurantId } : {})
+      : { userId: req.user.userId };
 
     const orders = await Order.find(filter)
       .populate("userId", "name email")
@@ -251,7 +273,7 @@ export const getOrderById = async (
       return;
     }
 
-    const { id } = req.params;
+    const id = String(req.params.id);
 
     if (!mongoose.Types.ObjectId.isValid(id)) {
       res.status(400).json({
@@ -261,7 +283,19 @@ export const getOrderById = async (
       return;
     }
 
-    const order = await Order.findById(id)
+    const roleName = getRoleName(req);
+    if (roleName === "restaurantadmin" && !req.user.restaurantId) {
+      res.status(403).json({ success: false, message: "A restaurant assignment is required" });
+      return;
+    }
+    if (roleName === "restaurantadmin" && !req.user.permissions?.includes("orders")) {
+      res.status(403).json({ success: false, message: "Orders access is not permitted" });
+      return;
+    }
+    const order = await Order.findOne({
+      _id: id,
+      ...(roleName === "restaurantadmin" ? { restaurantId: req.user.restaurantId } : {}),
+    })
       .populate("userId", "name email")
       .populate("restaurantId", "name")
       .populate("items.foodItemId", "name price image");
@@ -281,7 +315,7 @@ export const getOrderById = async (
         : String(order.userId);
 
     // Customers can only access their own orders
-    if (req.user.role !== "admin" && orderUserId !== req.user.userId) {
+    if (roleName !== "admin" && roleName !== "restaurantadmin" && orderUserId !== req.user.userId) {
       res.status(403).json({
         success: false,
         message: "You are not allowed to view this order",
@@ -305,11 +339,11 @@ export const getOrderById = async (
 // PUT /api/orders/:id/status
 // Admin only
 export const updateOrderStatus = async (
-  req: Request<{ id: string }>,
+  req: AuthRequest,
   res: Response
 ): Promise<void> => {
   try {
-    const { id } = req.params;
+    const id = String(req.params.id);
     const { orderStatus, paymentStatus } = req.body;
 
     if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -355,10 +389,15 @@ export const updateOrderStatus = async (
     if (orderStatus) updateData.orderStatus = orderStatus;
     if (paymentStatus) updateData.paymentStatus = paymentStatus;
 
-    const order = await Order.findByIdAndUpdate(id, updateData, {
+    const roleName = getRoleName(req);
+    const order = await Order.findOneAndUpdate(
+      { _id: id, ...(roleName === "restaurantadmin" ? { restaurantId: req.user?.restaurantId } : {}) },
+      updateData,
+      {
       new: true,
       runValidators: true,
-    });
+      }
+    );
 
     if (!order) {
       res.status(404).json({
@@ -385,11 +424,11 @@ export const updateOrderStatus = async (
 // DELETE /api/orders/:id
 // Admin only
 export const deleteOrder = async (
-  req: Request<{ id: string }>,
+  req: AuthRequest,
   res: Response
 ): Promise<void> => {
   try {
-    const { id } = req.params;
+    const id = String(req.params.id);
 
     if (!mongoose.Types.ObjectId.isValid(id)) {
       res.status(400).json({
@@ -399,8 +438,9 @@ export const deleteOrder = async (
       return;
     }
 
-    const order = await Order.findByIdAndUpdate(
-      id,
+    const roleName = getRoleName(req);
+    const order = await Order.findOneAndUpdate(
+      { _id: id, ...(roleName === "restaurantadmin" ? { restaurantId: req.user?.restaurantId } : {}) },
       { orderStatus: "CANCELLED" },
       { new: true }
     );

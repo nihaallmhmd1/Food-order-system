@@ -2,6 +2,8 @@ import { Request, Response } from "express";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import User from "../models/User";
+import Role, { IRole } from "../models/Role"; // Import IRole interface
+import { AuthRequest } from "../middleware/authMiddleware";
 
 export const register = async (
   req: Request,
@@ -32,50 +34,71 @@ export const register = async (
       return;
     }
 
-    // Hash password
-    const hashedPassword = await bcrypt.hash(password, 10);
+    // Find default "customer" role from database with explicit type casting
+    const customerRole = (await Role.findOne({ name: "customer" })) as IRole | null;
 
-    // Create user
-    const user = await User.create({
-      name,
-      email: email.toLowerCase(),
-      password: hashedPassword,
-      role: "customer",
-    });
-
-    // Create JWT
-    const jwtSecret = process.env.JWT_SECRET;
-
-    if (!jwtSecret) {
+    if (!customerRole) {
       res.status(500).json({
         success: false,
-        message: "JWT_SECRET is not configured",
+        message: "Default 'customer' role is not configured in database",
       });
       return;
     }
 
-    const token = jwt.sign(
-      {
-        userId: user._id,
-        role: user.role,
-      },
-      jwtSecret,
-      {
-        expiresIn: "7d",
-      }
-    );
+    // Hash password
+    const hashedPassword = await bcrypt.hash(password, 10);
 
-    res.status(201).json({
-      success: true,
-      message: "User registered successfully",
-      token,
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-      },
-    });
+    // Create user with customer role ObjectId
+    // Create user with customer role ObjectId
+const user = await User.create({
+  name,
+  email: email.toLowerCase(),
+  password: hashedPassword,
+  role: customerRole._id as any,
+  restaurantId: null,
+});
+
+// Get JWT secret
+const jwtSecret = process.env.JWT_SECRET;
+
+if (!jwtSecret) {
+  res.status(500).json({
+    success: false,
+    message: "JWT_SECRET is not configured",
+  });
+  return;
+}
+
+// Extract ID safely as string
+const roleIdStr = (customerRole._id as unknown as string).toString();
+const roleNameStr = String(customerRole.name);
+
+// Include role ObjectId and role name in token
+const token = jwt.sign(
+  {
+    userId: user._id,
+    roleId: roleIdStr,
+    role: roleNameStr,
+    restaurantId: null,
+  },
+  jwtSecret,
+  {
+    expiresIn: "7d",
+  }
+);
+
+res.status(201).json({
+  success: true,
+  message: "Registration successful",
+  token,
+  user: {
+    id: user._id,
+    name: user.name,
+    email: user.email,
+    role: customerRole,
+    restaurantId: null,
+  },
+});
   } catch (error) {
     console.error("Register error:", error);
 
@@ -85,6 +108,7 @@ export const register = async (
     });
   }
 };
+
 export const login = async (
   req: Request,
   res: Response
@@ -101,10 +125,10 @@ export const login = async (
       return;
     }
 
-    // Find user
+    // Find user and populate full Role document
     const user = await User.findOne({
       email: email.toLowerCase(),
-    });
+    }).populate<{ role: IRole }>("role", "_id name description permissions");
 
     if (!user) {
       res.status(401).json({
@@ -139,11 +163,15 @@ export const login = async (
       return;
     }
 
-    // Create JWT
+    const roleObj = user.role as unknown as IRole;
+
+    // Create JWT containing role details
     const token = jwt.sign(
       {
         userId: user._id,
-        role: user.role,
+        roleId: roleObj?._id,
+        role: roleObj?.name,
+        restaurantId: user.restaurantId ? String(user.restaurantId) : null,
       },
       jwtSecret,
       {
@@ -160,6 +188,7 @@ export const login = async (
         name: user.name,
         email: user.email,
         role: user.role,
+        restaurantId: user.restaurantId,
       },
     });
   } catch (error) {
@@ -171,7 +200,6 @@ export const login = async (
     });
   }
 };
-import { AuthRequest } from "../middleware/authMiddleware";
 
 export const getMe = async (
   req: AuthRequest,
@@ -186,9 +214,9 @@ export const getMe = async (
       return;
     }
 
-    const user = await User.findById(req.user.userId).select(
-      "-password"
-    );
+    const user = await User.findById(req.user.userId)
+      .select("-password")
+      .populate<{ role: IRole }>("role", "_id name description permissions");
 
     if (!user) {
       res.status(404).json({
@@ -205,6 +233,7 @@ export const getMe = async (
         name: user.name,
         email: user.email,
         role: user.role,
+        restaurantId: user.restaurantId,
       },
     });
   } catch (error) {

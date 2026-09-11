@@ -1,9 +1,9 @@
 import { Router } from "express";
 import { getDashboardStats } from "../controllers/dashboardController";
-import { authenticate, requireAdmin } from "../middleware/authMiddleware";
+import { authenticate, requirePermission } from "../middleware/authMiddleware";
 
 const router = Router();
 
-router.get("/stats", authenticate, requireAdmin, getDashboardStats);
+router.get("/stats", authenticate, requirePermission("dashboard"), getDashboardStats);
 
 export default router;

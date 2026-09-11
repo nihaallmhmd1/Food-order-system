@@ -1,10 +1,19 @@
 const API_URL = "http://localhost:5000/api";
 
+export interface Role {
+  _id: string;
+  name: string;
+  description?: string;
+  permissions?: string[];
+}
+
 export interface User {
   id: string;
+  _id?: string;
   name: string;
   email: string;
-  role: "customer" | "admin";
+  role: Role | string; // Supports populated object or string fallback
+  restaurantId?: string | { _id: string; name: string } | null;
 }
 
 export interface RegisterData {

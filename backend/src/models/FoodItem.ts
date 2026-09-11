@@ -75,4 +75,7 @@ const foodItemSchema = new Schema<IFoodItem>(
   }
 );
 
+foodItemSchema.index({ restaurantId: 1, createdAt: -1 });
+foodItemSchema.index({ restaurantId: 1, categoryId: 1 });
+
 export default mongoose.model<IFoodItem>("FoodItem", foodItemSchema);

@@ -20,6 +20,7 @@ import AdminOrders from "./admin/pages/AdminOrders";
 import AdminUsers from "./admin/pages/AdminUsers";
 import AdminFoodItems from "./admin/pages/AdminFoodItems";
 import AdminCategories from "./admin/pages/AdminCategories";
+import AdminRoles from "./admin/pages/AdminRoles";
 
 function MainLayout() {
   const location = useLocation();
@@ -66,6 +67,7 @@ function MainLayout() {
             <Route path="/admin/restaurants" element={<AdminRestaurants />} />
             <Route path="/admin/orders" element={<AdminOrders />} />
             <Route path="/admin/users" element={<AdminUsers />} />
+            <Route path="/admin/roles" element={<AdminRoles />} />
             <Route path="/admin/food-items" element={<AdminFoodItems />} />
             <Route path="/admin/categories" element={<AdminCategories />} />
 

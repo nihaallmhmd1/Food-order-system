@@ -26,7 +26,10 @@ export const getCategories = async (restaurantId?: string) => {
     ? `${API_URL}/categories?restaurantId=${restaurantId}`
     : `${API_URL}/categories`;
 
-  const response = await fetch(url);
+  const token = localStorage.getItem("token");
+  const response = await fetch(url, {
+    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+  });
 
   if (!response.ok) {
     throw new Error("Failed to fetch categories");

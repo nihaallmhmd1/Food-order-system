@@ -3,7 +3,7 @@ import Order from "../models/Order";
 import User from "../models/User";
 import Restaurant from "../models/Restaurant";
 import FoodItem from "../models/FoodItem";
-import { AuthRequest } from "../middleware/authMiddleware";
+import { AuthRequest, getRoleName } from "../middleware/authMiddleware";
 
 const ORDER_STATUSES = [
   "PLACED",
@@ -16,16 +16,23 @@ const ORDER_STATUSES = [
 
 // GET /api/admin/dashboard/stats
 export const getDashboardStats = async (
-  _req: AuthRequest,
+  req: AuthRequest,
   res: Response
 ): Promise<void> => {
   try {
+    const roleName = getRoleName(req);
+    const tenantId = roleName === "restaurantadmin" ? req.user?.restaurantId : null;
+    if (roleName === "restaurantadmin" && !tenantId) {
+      res.status(403).json({ success: false, message: "A restaurant assignment is required" });
+      return;
+    }
+    const tenantFilter = tenantId ? { restaurantId: tenantId } : {};
     const [userCount, restaurantCount, foodItemCount, orderCount] =
       await Promise.all([
-        User.countDocuments(),
-        Restaurant.countDocuments({ isActive: true }),
-        FoodItem.countDocuments({ isActive: true }),
-        Order.countDocuments(),
+        User.countDocuments(tenantFilter),
+        tenantId ? Restaurant.countDocuments({ _id: tenantId, isActive: true }) : Restaurant.countDocuments({ isActive: true }),
+        FoodItem.countDocuments({ ...tenantFilter, isActive: true }),
+        Order.countDocuments(tenantFilter),
       ]);
 
     const fourteenDaysAgo = new Date();
@@ -33,6 +40,7 @@ export const getDashboardStats = async (
     fourteenDaysAgo.setHours(0, 0, 0, 0);
 
     const [facetResult] = await Order.aggregate([
+      ...(tenantId ? [{ $match: { restaurantId: tenantId } }] : []),
       {
         $facet: {
           // Total revenue — cancelled orders don't count as revenue

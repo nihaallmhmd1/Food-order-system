@@ -1,14 +1,17 @@
 import { Request, Response } from "express";
 import mongoose from "mongoose";
 import Restaurant from "../models/Restaurant";
+import { AuthRequest, getRoleName } from "../middleware/authMiddleware";
 
 // GET /api/restaurants
 export const getRestaurants = async (
-  _req: Request,
+  req: AuthRequest,
   res: Response
 ): Promise<void> => {
   try {
-    const restaurants = await Restaurant.find({ isActive: true }).sort({
+    const roleName = getRoleName(req);
+    const filter = roleName === "restaurantadmin" ? { _id: req.user?.restaurantId, isActive: true } : { isActive: true };
+    const restaurants = await Restaurant.find(filter).sort({
       createdAt: -1,
     });
 
@@ -29,11 +32,11 @@ export const getRestaurants = async (
 
 // GET /api/restaurants/:id
 export const getRestaurantById = async (
-  req: Request<{ id: string }>,
+  req: AuthRequest,
   res: Response
 ): Promise<void> => {
   try {
-    const { id } = req.params;
+    const id = String(req.params.id);
 
     if (!mongoose.Types.ObjectId.isValid(id)) {
       res.status(400).json({
@@ -43,9 +46,11 @@ export const getRestaurantById = async (
       return;
     }
 
+    const roleName = getRoleName(req);
     const restaurant = await Restaurant.findOne({
       _id: id,
       isActive: true,
+      ...(roleName === "restaurantadmin" ? { _id: req.user?.restaurantId } : {}),
     });
 
     if (!restaurant) {

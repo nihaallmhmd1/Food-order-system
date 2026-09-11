@@ -51,6 +51,9 @@ const categorySchema = new Schema<ICategory>(
   }
 );
 
+categorySchema.index({ restaurantId: 1, createdAt: -1 });
+categorySchema.index({ restaurantId: 1, name: 1 });
+
 const Category = mongoose.model<ICategory>("Category", categorySchema);
 
 export default Category;

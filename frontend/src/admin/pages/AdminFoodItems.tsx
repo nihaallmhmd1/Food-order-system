@@ -8,6 +8,7 @@ import {
 } from "../../api/foodItemApi";
 import { getRestaurants } from "../../api/restaurantApi";
 import { getCategories } from "../../api/categoryApi";
+import { useAuth } from "../../context/AuthContext";
 
 interface Restaurant {
   _id: string;
@@ -21,6 +22,13 @@ interface Category {
 }
 
 function AdminFoodItems() {
+  const { user } = useAuth();
+  const roleName = typeof user?.role === "object" ? user.role.name : user?.role;
+  const assignedRestaurantId =
+    typeof user?.restaurantId === "object" && user.restaurantId !== null
+      ? user.restaurantId._id
+      : user?.restaurantId || "";
+  const isRestaurantAdmin = roleName === "restaurantadmin";
   const [foodItems, setFoodItems] = useState<FoodItem[]>([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
@@ -107,8 +115,13 @@ function AdminFoodItems() {
 
   useEffect(() => {
     fetchFoodItems();
-    fetchRestaurants();
-  }, []);
+    if (isRestaurantAdmin) {
+      setSelectedRestaurant(assignedRestaurantId);
+      setEditRestaurant(assignedRestaurantId);
+    } else {
+      fetchRestaurants();
+    }
+  }, [assignedRestaurantId, isRestaurantAdmin]);
 
   // ==============================
   // FETCH CATEGORIES (Add modal)
@@ -279,7 +292,7 @@ function AdminFoodItems() {
     try {
       setFormError("");
 
-      if (!selectedRestaurant) {
+      if (!selectedRestaurant && !isRestaurantAdmin) {
         setFormError("Please select a restaurant.");
         return;
       }
@@ -307,7 +320,7 @@ function AdminFoodItems() {
       setFormLoading(true);
 
       const newFoodItem = await createFoodItem({
-        restaurantId: selectedRestaurant,
+        ...(isRestaurantAdmin ? {} : { restaurantId: selectedRestaurant }),
         categoryId: selectedCategory,
         name: foodName.trim(),
         description: description.trim(),
@@ -389,7 +402,7 @@ function AdminFoodItems() {
     try {
       setEditFormError("");
 
-      if (!editRestaurant) {
+      if (!editRestaurant && !isRestaurantAdmin) {
         setEditFormError("Please select a restaurant.");
         return;
       }
@@ -417,7 +430,7 @@ function AdminFoodItems() {
       setEditFormLoading(true);
 
       const updatedFoodItem = await updateFoodItem(editingFoodItem._id, {
-        restaurantId: editRestaurant,
+        ...(isRestaurantAdmin ? {} : { restaurantId: editRestaurant }),
         categoryId: editCategory,
         name: editFoodName.trim(),
         description: editDescription.trim(),
@@ -812,8 +825,7 @@ function AdminFoodItems() {
                   </div>
                 )}
 
-                {/* Restaurant */}
-                <div>
+                {!isRestaurantAdmin && <div>
                   <label className="mb-1.5 block text-sm font-medium text-slate-700">
                     Restaurant
                   </label>
@@ -831,7 +843,7 @@ function AdminFoodItems() {
                       </option>
                     ))}
                   </select>
-                </div>
+                </div>}
 
                 {/* Category */}
                 <div>
@@ -1041,8 +1053,7 @@ function AdminFoodItems() {
                   </div>
                 )}
 
-                {/* Restaurant */}
-                <div>
+                {!isRestaurantAdmin && <div>
                   <label className="mb-1.5 block text-sm font-medium text-slate-700">
                     Restaurant
                   </label>
@@ -1063,7 +1074,7 @@ function AdminFoodItems() {
                       </option>
                     ))}
                   </select>
-                </div>
+                </div>}
 
                 {/* Category */}
                 <div>

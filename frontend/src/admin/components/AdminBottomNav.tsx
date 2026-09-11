@@ -1,6 +1,8 @@
 import { NavLink } from "react-router-dom";
+import { useAuth } from "../../context/AuthContext";
 
 function AdminBottomNav() {
+  const { user } = useAuth();
   const menuItems = [
     { name: "Dashboard", path: "/admin", icon: "📊" },
     { name: "Restaurants", path: "/admin/restaurants", icon: "🍽️" },
@@ -8,11 +10,17 @@ function AdminBottomNav() {
     { name: "Food Items", path: "/admin/food-items", icon: "🍔" },
     { name: "Orders", path: "/admin/orders", icon: "🛒" },
     { name: "Users", path: "/admin/users", icon: "👥" },
+    { name: "Roles", path: "/admin/roles", icon: "🛡️" },
   ];
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-40 flex h-16 overflow-x-auto border-t border-gray-200 bg-white md:hidden">
-      {menuItems.map((item) => (
+      {menuItems.filter((item) => {
+        const roleName = typeof user?.role === "object" ? user.role.name : user?.role;
+        if (roleName === "admin") return true;
+        const permission = item.path === "/admin" ? "dashboard" : item.path.replace("/admin/", "");
+        return typeof user?.role === "object" && user.role.permissions?.includes(permission);
+      }).map((item) => (
         <NavLink
           key={item.path}
           to={item.path}

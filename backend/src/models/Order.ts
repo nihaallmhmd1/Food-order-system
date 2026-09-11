@@ -151,4 +151,6 @@ const orderSchema = new Schema<IOrder>(
   }
 );
 
+orderSchema.index({ restaurantId: 1, createdAt: -1 });
+
 export default mongoose.model<IOrder>("Order", orderSchema);

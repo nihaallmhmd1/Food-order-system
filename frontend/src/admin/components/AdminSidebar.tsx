@@ -1,8 +1,10 @@
+// src/admin/components/AdminSidebar.jsx
+
 import { NavLink } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 
 function AdminSidebar() {
-  const { logout } = useAuth();
+  const { logout, user } = useAuth();
 
   const menuItems = [
     {
@@ -35,6 +37,11 @@ function AdminSidebar() {
       path: "/admin/users",
       icon: "👥",
     },
+    {
+      name: "Roles",
+      path: "/admin/roles",
+      icon: "🛡️",
+    },
   ];
 
   return (
@@ -49,7 +56,12 @@ function AdminSidebar() {
 
       {/* Navigation */}
       <nav className="flex-1 space-y-1 p-4">
-        {menuItems.map((item) => (
+        {menuItems.filter((item) => {
+          const roleName = typeof user?.role === "object" ? user.role.name : user?.role;
+          if (roleName === "admin") return true;
+          const permission = item.path === "/admin" ? "dashboard" : item.path.replace("/admin/", "");
+          return typeof user?.role === "object" && user.role.permissions?.includes(permission);
+        }).map((item) => (
           <NavLink
             key={item.path}
             to={item.path}

@@ -2,6 +2,7 @@ import dotenv from "dotenv";
 import mongoose from "mongoose";
 import bcrypt from "bcrypt";
 import User from "../models/User";
+import Role from "../models/Role";
 
 dotenv.config();
 
@@ -19,10 +20,20 @@ const createAdmin = async () => {
     const password = "admin123";
     const name = "Admin";
 
+    const adminRole = await Role.findOneAndUpdate(
+      { name: "admin" },
+      { name: "admin", description: "Full access to the administration dashboard." },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+
     const existingAdmin = await User.findOne({ email });
 
     if (existingAdmin) {
-      console.log("Admin already exists");
+      await User.updateOne(
+        { _id: existingAdmin._id },
+        { $set: { role: adminRole._id as any } }
+      );
+      console.log("Admin already exists; admin role reference repaired");
       return;
     }
 
@@ -32,7 +43,7 @@ const createAdmin = async () => {
       name,
       email,
       password: hashedPassword,
-      role: "admin",
+      role: adminRole._id as any,
     });
 
     console.log("Admin created successfully");

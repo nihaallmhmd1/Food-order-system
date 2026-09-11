@@ -4,13 +4,14 @@ import {
   createOrder,
   getOrders,
   getMyOrders,
+  getOrderById,
   updateOrderStatus,
   deleteOrder,
 } from "../controllers/orderController";
 
 import {
   authenticate,
-  requireAdmin,
+  requirePermission,
 } from "../middleware/authMiddleware";
 
 const router = Router();
@@ -23,12 +24,13 @@ router.get("/my-orders", authenticate, getMyOrders);
 
 // Admin / General - Get orders (Returns all orders for admin, user orders for customer)
 router.get("/", authenticate, getOrders);
+router.get("/:id", authenticate, getOrderById);
 
 // Admin only - Update order status
 router.put(
   "/:id/status",
   authenticate,
-  requireAdmin,
+  requirePermission("orders"),
   updateOrderStatus
 );
 
@@ -36,7 +38,7 @@ router.put(
 router.delete(
   "/:id",
   authenticate,
-  requireAdmin,
+  requirePermission("orders"),
   deleteOrder
 );
 

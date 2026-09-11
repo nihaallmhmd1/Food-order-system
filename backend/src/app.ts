@@ -9,6 +9,7 @@ import authRoutes from "./routes/authRoutes";
 import searchRoutes from "./routes/searchRoutes";
 import userRoutes from "./routes/userRoutes";
 import dashboardRoutes from "./routes/dashboardRoutes";
+import roleRoutes from "./routes/roleRoutes";
 
 const app = express();
 
@@ -36,5 +37,6 @@ app.use("/api/auth", authRoutes);
 app.use("/api/search", searchRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/admin/dashboard", dashboardRoutes);
+app.use("/api/roles", roleRoutes);
 
 export default app;

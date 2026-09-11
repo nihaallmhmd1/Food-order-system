@@ -6,8 +6,16 @@ import {
   updateCategory,
   type Category,
 } from "../../api/categoryApi";
+import { useAuth } from "../../context/AuthContext";
 
 function AdminCategories() {
+  const { user } = useAuth();
+  const roleName = typeof user?.role === "object" ? user.role.name : user?.role;
+  const assignedRestaurantId =
+    typeof user?.restaurantId === "object" && user.restaurantId !== null
+      ? user.restaurantId._id
+      : user?.restaurantId || "";
+  const isRestaurantAdmin = roleName === "restaurantadmin";
   const [categories, setCategories] = useState<Category[]>([]);
 
   const [name, setName] = useState("");
@@ -64,6 +72,7 @@ function AdminCategories() {
   // ---------------------------------
   const handleAddCategory = () => {
     resetForm();
+    if (isRestaurantAdmin) setRestaurantId(assignedRestaurantId);
     setShowModal(true);
   };
 
@@ -90,7 +99,7 @@ function AdminCategories() {
       return;
     }
 
-    if (!restaurantId.trim()) {
+    if (!isRestaurantAdmin && !restaurantId.trim()) {
       setError("Restaurant ID is required");
       return;
     }
@@ -102,7 +111,7 @@ function AdminCategories() {
       const data = {
         name: name.trim(),
         image: image.trim(),
-        restaurantId: restaurantId.trim(),
+        ...(isRestaurantAdmin ? {} : { restaurantId: restaurantId.trim() }),
       };
 
       if (editingId) {
@@ -137,7 +146,7 @@ function AdminCategories() {
     setEditingId(category._id);
     setName(category.name);
     setImage(category.image || category.imageUrl || "");
-    setRestaurantId(categoryWithRestaurant.restaurantId || "");
+    setRestaurantId(isRestaurantAdmin ? assignedRestaurantId : categoryWithRestaurant.restaurantId || "");
 
     setError("");
     setShowModal(true);
@@ -465,8 +474,7 @@ function AdminCategories() {
                   />
                 </div>
 
-                {/* Restaurant ID */}
-                <div>
+                {!isRestaurantAdmin && <div>
                   <label className="mb-2 block text-sm font-medium text-gray-700">
                     Restaurant ID
                   </label>
@@ -485,7 +493,7 @@ function AdminCategories() {
                     Enter the ID of the restaurant this
                     category belongs to.
                   </p>
-                </div>
+                </div>}
 
                 {/* Image URL */}
                 <div>

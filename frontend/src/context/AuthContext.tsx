@@ -20,7 +20,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   loading: boolean;
   register: (data: RegisterData) => Promise<void>;
-  login: (data: LoginData) => Promise<void>;
+  login: (data: LoginData) => Promise<User>;
   logout: () => void;
 }
 
@@ -65,11 +65,12 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   };
 
   // Login
-  const login = async (data: LoginData) => {
+  const login = async (data: LoginData): Promise<User> => {
     const result = await loginUser(data);
 
     localStorage.setItem("token", result.token);
     setUser(result.user);
+    return result.user;
   };
 
   // Logout

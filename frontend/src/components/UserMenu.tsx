@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
 interface UserMenuProps {
@@ -66,6 +66,27 @@ export default function UserMenu({ variant = "light" }: UserMenuProps) {
               <p className="truncate text-xs text-gray-500">{user.email}</p>
             )}
           </div>
+          {(() => {
+            const roleName =
+              typeof user.role === "object" ? user.role.name : user.role;
+            const hasPortalAccess =
+              roleName === "admin" ||
+              (roleName === "restaurantadmin" &&
+                Boolean(user.restaurantId) &&
+                (user.role instanceof Object
+                  ? (user.role.permissions?.length || 0) > 0
+                  : false));
+
+            return hasPortalAccess ? (
+              <Link
+                to="/admin"
+                onClick={() => setOpen(false)}
+                className="flex w-full items-center gap-2 px-4 py-3 text-left text-sm font-semibold text-emerald-700 transition-colors hover:bg-emerald-50"
+              >
+                Admin Portal
+              </Link>
+            ) : null;
+          })()}
           <button
             onClick={handleLogout}
             className="flex w-full items-center gap-2 px-4 py-3 text-left text-sm font-semibold text-red-600 transition-colors hover:bg-red-50"

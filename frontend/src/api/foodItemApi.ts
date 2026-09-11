@@ -5,7 +5,10 @@ export const getFoodItems = async (restaurantId?: string) => {
     ? `${API_URL}/food-items?restaurantId=${restaurantId}` 
     : `${API_URL}/food-items`;
 
-  const response = await fetch(url);
+  const token = localStorage.getItem("token");
+  const response = await fetch(url, {
+    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+  });
 
   if (!response.ok) {
     throw new Error("Failed to fetch food items");
@@ -17,7 +20,7 @@ export const getFoodItems = async (restaurantId?: string) => {
 };
 
 export interface CreateFoodItemData {
-  restaurantId: string;
+  restaurantId?: string;
   categoryId: string;
   name: string;
   description: string;

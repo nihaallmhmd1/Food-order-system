@@ -17,8 +17,18 @@ export default function Login() {
     setLoading(true);
 
     try {
-      await login({ email, password });
-      navigate("/");
+      const loggedInUser = await login({ email, password });
+      const roleName =
+        typeof loggedInUser.role === "object"
+          ? loggedInUser.role.name
+          : loggedInUser.role;
+      const hasAdminAccess =
+        roleName === "admin" ||
+        (roleName === "restaurantadmin" &&
+          typeof loggedInUser.role === "object" &&
+          Boolean(loggedInUser.restaurantId) &&
+          (loggedInUser.role.permissions?.length || 0) > 0);
+      navigate(hasAdminAccess ? "/admin" : "/");
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "Invalid email or password."

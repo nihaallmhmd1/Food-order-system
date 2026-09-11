@@ -2,6 +2,7 @@ import { Router } from "express";
 
 import {
   getAllUsers,
+  createUser,
   updateUserRole,
   deleteUser,
 } from "../controllers/userController";
@@ -19,6 +20,7 @@ router.use(requireAdmin);
 
 // Get all users
 router.get("/", getAllUsers);
+router.post("/", createUser);
 
 // Update user role
 router.put("/:id/role", updateUserRole);

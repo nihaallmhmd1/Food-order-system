@@ -1,21 +1,33 @@
-import { Request, Response } from "express";
+import { Response } from "express";
 import mongoose from "mongoose";
 import Category from "../models/Category";
+import { AuthRequest, getRoleName } from "../middleware/authMiddleware";
 
 // GET /api/categories
 // Optional query: /api/categories?restaurantId=xyz
 export const getCategories = async (
-  req: Request<{}, {}, {}, { restaurantId?: string }>,
+  req: AuthRequest,
   res: Response
 ): Promise<void> => {
   try {
-    const { restaurantId } = req.query;
+    const { restaurantId } = req.query as { restaurantId?: string };
 
     const filter: any = {
       isActive: true,
     };
 
-    if (restaurantId) {
+    const roleName = getRoleName(req);
+    const tenantId = roleName === "restaurantadmin" ? req.user?.restaurantId : null;
+    if (roleName === "restaurantadmin" && !tenantId) {
+      res.status(403).json({ success: false, message: "A restaurant assignment is required" });
+      return;
+    }
+    if (tenantId && restaurantId && restaurantId !== tenantId) {
+      res.status(403).json({ success: false, message: "Access denied" });
+      return;
+    }
+
+    if (restaurantId && !tenantId) {
       if (!mongoose.Types.ObjectId.isValid(restaurantId)) {
         res.status(400).json({
           success: false,
@@ -26,6 +38,7 @@ export const getCategories = async (
 
       filter.restaurantId = restaurantId;
     }
+    if (tenantId) filter.restaurantId = tenantId;
 
     const categories = await Category.find(filter).sort({
       createdAt: 1,
@@ -48,11 +61,11 @@ export const getCategories = async (
 
 // GET /api/categories/:id
 export const getCategoryById = async (
-  req: Request<{ id: string }>,
+  req: AuthRequest,
   res: Response
 ): Promise<void> => {
   try {
-    const { id } = req.params;
+    const id = String(req.params.id);
 
     if (!mongoose.Types.ObjectId.isValid(id)) {
       res.status(400).json({
@@ -62,9 +75,16 @@ export const getCategoryById = async (
       return;
     }
 
+    const roleName = getRoleName(req);
+    const tenantId = roleName === "restaurantadmin" ? req.user?.restaurantId : null;
+    if (roleName === "restaurantadmin" && !tenantId) {
+      res.status(403).json({ success: false, message: "A restaurant assignment is required" });
+      return;
+    }
     const category = await Category.findOne({
       _id: id,
       isActive: true,
+      ...(tenantId ? { restaurantId: tenantId } : {}),
     });
 
     if (!category) {
@@ -91,7 +111,7 @@ export const getCategoryById = async (
 
 // POST /api/categories
 export const createCategory = async (
-  req: Request,
+  req: AuthRequest,
   res: Response
 ): Promise<void> => {
   try {
@@ -103,7 +123,9 @@ export const createCategory = async (
       isActive,
     } = req.body;
 
-    if (!name || !restaurantId) {
+    const roleName = getRoleName(req);
+    const tenantId = roleName === "restaurantadmin" ? req.user?.restaurantId : null;
+    if (!name || (!restaurantId && !tenantId)) {
       res.status(400).json({
         success: false,
         message: "Name and restaurantId are required",
@@ -111,7 +133,12 @@ export const createCategory = async (
       return;
     }
 
-    if (!mongoose.Types.ObjectId.isValid(restaurantId)) {
+    const targetRestaurantId = tenantId || restaurantId;
+    if (tenantId && restaurantId && restaurantId !== tenantId) {
+      res.status(403).json({ success: false, message: "Access denied" });
+      return;
+    }
+    if (!targetRestaurantId || !mongoose.Types.ObjectId.isValid(targetRestaurantId)) {
       res.status(400).json({
         success: false,
         message: "Invalid restaurant ID",
@@ -122,7 +149,7 @@ export const createCategory = async (
     const category = await Category.create({
       name,
       description,
-      restaurantId,
+      restaurantId: targetRestaurantId,
       image,
       isActive,
     });
@@ -144,11 +171,11 @@ export const createCategory = async (
 
 // PUT /api/categories/:id
 export const updateCategory = async (
-  req: Request<{ id: string }>,
+  req: AuthRequest,
   res: Response
 ): Promise<void> => {
   try {
-    const { id } = req.params;
+    const id = String(req.params.id);
 
     if (!mongoose.Types.ObjectId.isValid(id)) {
       res.status(400).json({
@@ -158,9 +185,16 @@ export const updateCategory = async (
       return;
     }
 
-    const category = await Category.findByIdAndUpdate(
-      id,
-      req.body,
+    const roleName = getRoleName(req);
+    const tenantId = roleName === "restaurantadmin" ? req.user?.restaurantId : null;
+    if (tenantId && req.body.restaurantId && req.body.restaurantId !== tenantId) {
+      res.status(403).json({ success: false, message: "Access denied" });
+      return;
+    }
+    const { restaurantId: _restaurantId, ...updates } = req.body;
+    const category = await Category.findOneAndUpdate(
+      { _id: id, ...(tenantId ? { restaurantId: tenantId } : {}) },
+      updates,
       {
         new: true,
         runValidators: true,
@@ -192,11 +226,11 @@ export const updateCategory = async (
 
 // DELETE /api/categories/:id
 export const deleteCategory = async (
-  req: Request<{ id: string }>,
+  req: AuthRequest,
   res: Response
 ): Promise<void> => {
   try {
-    const { id } = req.params;
+    const id = String(req.params.id);
 
     if (!mongoose.Types.ObjectId.isValid(id)) {
       res.status(400).json({
@@ -206,8 +240,10 @@ export const deleteCategory = async (
       return;
     }
 
-    const category = await Category.findByIdAndUpdate(
-      id,
+    const roleName = getRoleName(req);
+    const tenantId = roleName === "restaurantadmin" ? req.user?.restaurantId : null;
+    const category = await Category.findOneAndUpdate(
+      { _id: id, ...(tenantId ? { restaurantId: tenantId } : {}) },
       { isActive: false },
       { new: true }
     );
