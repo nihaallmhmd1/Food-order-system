@@ -2,9 +2,17 @@ import { Request, Response } from "express";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import User from "../models/User";
-import Role, { IRole } from "../models/Role"; // Import IRole interface
+import Role, { IRole } from "../models/Role";
 import { AuthRequest } from "../middleware/authMiddleware";
 
+const cookieOptions = {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === "production",
+  sameSite: process.env.NODE_ENV === "production" ? "none" as const : "lax" as const,
+  maxAge: 7 * 24 * 60 * 60 * 1000,
+};
+
+// Register user
 export const register = async (
   req: Request,
   res: Response
@@ -12,7 +20,6 @@ export const register = async (
   try {
     const { name, email, password } = req.body;
 
-    // Validate required fields
     if (!name || !email || !password) {
       res.status(400).json({
         success: false,
@@ -21,7 +28,6 @@ export const register = async (
       return;
     }
 
-    // Check if user already exists
     const existingUser = await User.findOne({
       email: email.toLowerCase(),
     });
@@ -34,8 +40,9 @@ export const register = async (
       return;
     }
 
-    // Find default "customer" role from database with explicit type casting
-    const customerRole = (await Role.findOne({ name: "customer" })) as IRole | null;
+    const customerRole = (await Role.findOne({
+      name: "customer",
+    })) as IRole | null;
 
     if (!customerRole) {
       res.status(500).json({
@@ -45,60 +52,56 @@ export const register = async (
       return;
     }
 
-    // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Create user with customer role ObjectId
-    // Create user with customer role ObjectId
-const user = await User.create({
-  name,
-  email: email.toLowerCase(),
-  password: hashedPassword,
-  role: customerRole._id as any,
-  restaurantId: null,
-});
+    const user = await User.create({
+      name,
+      email: email.toLowerCase(),
+      password: hashedPassword,
+      role: customerRole._id as any,
+      restaurantId: null,
+    });
 
-// Get JWT secret
-const jwtSecret = process.env.JWT_SECRET;
+    const jwtSecret = process.env.JWT_SECRET;
 
-if (!jwtSecret) {
-  res.status(500).json({
-    success: false,
-    message: "JWT_SECRET is not configured",
-  });
-  return;
-}
+    if (!jwtSecret) {
+      res.status(500).json({
+        success: false,
+        message: "JWT_SECRET is not configured",
+      });
+      return;
+    }
 
-// Extract ID safely as string
-const roleIdStr = (customerRole._id as unknown as string).toString();
-const roleNameStr = String(customerRole.name);
+    const roleIdStr = (customerRole._id as unknown as string).toString();
+    const roleNameStr = String(customerRole.name);
 
-// Include role ObjectId and role name in token
-const token = jwt.sign(
-  {
-    userId: user._id,
-    roleId: roleIdStr,
-    role: roleNameStr,
-    restaurantId: null,
-  },
-  jwtSecret,
-  {
-    expiresIn: "7d",
-  }
-);
+    const token = jwt.sign(
+      {
+        userId: user._id,
+        roleId: roleIdStr,
+        role: roleNameStr,
+        restaurantId: null,
+      },
+      jwtSecret,
+      {
+        expiresIn: "7d",
+      }
+    );
 
-res.status(201).json({
-  success: true,
-  message: "Registration successful",
-  token,
-  user: {
-    id: user._id,
-    name: user.name,
-    email: user.email,
-    role: customerRole,
-    restaurantId: null,
-  },
-});
+    // Store JWT in HttpOnly cookie
+    res.cookie("token", token, cookieOptions);
+
+    res.status(201).json({
+      success: true,
+      message: "Registration successful",
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: customerRole,
+        restaurantId: null,
+      },
+    });
   } catch (error) {
     console.error("Register error:", error);
 
@@ -109,6 +112,7 @@ res.status(201).json({
   }
 };
 
+// Login user
 export const login = async (
   req: Request,
   res: Response
@@ -116,7 +120,6 @@ export const login = async (
   try {
     const { email, password } = req.body;
 
-    // Validate required fields
     if (!email || !password) {
       res.status(400).json({
         success: false,
@@ -125,10 +128,12 @@ export const login = async (
       return;
     }
 
-    // Find user and populate full Role document
     const user = await User.findOne({
       email: email.toLowerCase(),
-    }).populate<{ role: IRole }>("role", "_id name description permissions");
+    }).populate<{ role: IRole }>(
+      "role",
+      "_id name description permissions"
+    );
 
     if (!user) {
       res.status(401).json({
@@ -138,7 +143,6 @@ export const login = async (
       return;
     }
 
-    // Compare password
     const isPasswordValid = await bcrypt.compare(
       password,
       user.password
@@ -152,7 +156,6 @@ export const login = async (
       return;
     }
 
-    // Get JWT secret
     const jwtSecret = process.env.JWT_SECRET;
 
     if (!jwtSecret) {
@@ -165,13 +168,14 @@ export const login = async (
 
     const roleObj = user.role as unknown as IRole;
 
-    // Create JWT containing role details
     const token = jwt.sign(
       {
         userId: user._id,
         roleId: roleObj?._id,
         role: roleObj?.name,
-        restaurantId: user.restaurantId ? String(user.restaurantId) : null,
+        restaurantId: user.restaurantId
+          ? String(user.restaurantId)
+          : null,
       },
       jwtSecret,
       {
@@ -179,10 +183,12 @@ export const login = async (
       }
     );
 
+    // Store JWT in HttpOnly cookie
+    res.cookie("token", token, cookieOptions);
+
     res.status(200).json({
       success: true,
       message: "Login successful",
-      token,
       user: {
         id: user._id,
         name: user.name,
@@ -201,6 +207,7 @@ export const login = async (
   }
 };
 
+// Get currently logged-in user
 export const getMe = async (
   req: AuthRequest,
   res: Response
@@ -216,7 +223,10 @@ export const getMe = async (
 
     const user = await User.findById(req.user.userId)
       .select("-password")
-      .populate<{ role: IRole }>("role", "_id name description permissions");
+      .populate<{ role: IRole }>(
+        "role",
+        "_id name description permissions"
+      );
 
     if (!user) {
       res.status(404).json({
@@ -244,4 +254,24 @@ export const getMe = async (
       message: "Server error",
     });
   }
+};
+
+// Logout user
+export const logout = (
+  req: Request,
+  res: Response
+): void => {
+  res.clearCookie("token", {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite:
+      process.env.NODE_ENV === "production"
+        ? "none"
+        : "lax",
+  });
+
+  res.status(200).json({
+    success: true,
+    message: "Logout successful",
+  });
 };

@@ -1,5 +1,6 @@
 import express from "express";
 import cors from "cors";
+import cookieParser from "cookie-parser";
 
 import restaurantRoutes from "./routes/restaurantRoutes";
 import categoryRoutes from "./routes/categoryRoutes";
@@ -12,6 +13,8 @@ import dashboardRoutes from "./routes/dashboardRoutes";
 import roleRoutes from "./routes/roleRoutes";
 
 const app = express();
+
+app.use(cookieParser());
 
 app.use(
   cors({
