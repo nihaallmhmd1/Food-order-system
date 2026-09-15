@@ -1,4 +1,4 @@
-const API_URL = "http://localhost:5000/api";
+import API_BASE_URL from "./api";
 
 export interface Category {
   _id: string;
@@ -23,8 +23,8 @@ export interface UpdateCategoryData {
 // GET categories
 export const getCategories = async (restaurantId?: string) => {
   const url = restaurantId
-    ? `${API_URL}/categories?restaurantId=${restaurantId}`
-    : `${API_URL}/categories`;
+    ? `${API_BASE_URL}/categories?restaurantId=${restaurantId}`
+    : `${API_BASE_URL}/categories`;
 
   const response = await fetch(url, {
     method: "GET",
@@ -42,7 +42,7 @@ export const getCategories = async (restaurantId?: string) => {
 
 // CREATE category
 export const createCategory = async (data: CreateCategoryData) => {
-  const response = await fetch(`${API_URL}/categories`, {
+  const response = await fetch(`${API_BASE_URL}/categories`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -67,7 +67,7 @@ export const updateCategory = async (
   id: string,
   data: UpdateCategoryData
 ) => {
-  const response = await fetch(`${API_URL}/categories/${id}`, {
+  const response = await fetch(`${API_BASE_URL}/categories/${id}`, {
     method: "PUT",
     headers: {
       "Content-Type": "application/json",
@@ -89,7 +89,7 @@ export const updateCategory = async (
 
 // DELETE category
 export const deleteCategory = async (id: string) => {
-  const response = await fetch(`${API_URL}/categories/${id}`, {
+  const response = await fetch(`${API_BASE_URL}/categories/${id}`, {
     method: "DELETE",
     credentials: "include",
   });

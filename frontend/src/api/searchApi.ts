@@ -1,8 +1,8 @@
-const API_URL = "http://localhost:5000/api";
+import API_BASE_URL from "./api";
 
 export const searchAll = async (query: string) => {
   const response = await fetch(
-    `${API_URL}/search?q=${encodeURIComponent(query)}`
+    `${API_BASE_URL}/search?q=${encodeURIComponent(query)}`
   );
 
   const data = await response.json();

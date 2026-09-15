@@ -1,4 +1,4 @@
-const API_URL = "http://localhost:5000/api";
+import API_BASE_URL from "./api";
 
 export interface DashboardSummary {
   totalUsers: number;
@@ -56,7 +56,7 @@ export interface DashboardStats {
 }
 
 export const getDashboardStats = async (): Promise<DashboardStats> => {
-  const response = await fetch(`${API_URL}/admin/dashboard/stats`, {
+  const response = await fetch(`${API_BASE_URL}/admin/dashboard/stats`, {
     method: "GET",
     credentials: "include",
   });

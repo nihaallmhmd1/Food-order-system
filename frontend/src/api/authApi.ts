@@ -1,4 +1,4 @@
-const API_URL = "http://localhost:5000/api";
+import API_BASE_URL from "./api";
 
 export interface Role {
   _id: string;
@@ -37,7 +37,7 @@ export interface AuthResponse {
 export const registerUser = async (
   data: RegisterData
 ): Promise<AuthResponse> => {
-  const response = await fetch(`${API_URL}/auth/register`, {
+  const response = await fetch(`${API_BASE_URL}/auth/register`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -59,7 +59,7 @@ export const registerUser = async (
 export const loginUser = async (
   data: LoginData
 ): Promise<AuthResponse> => {
-  const response = await fetch(`${API_URL}/auth/login`, {
+  const response = await fetch(`${API_BASE_URL}/auth/login`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -82,7 +82,7 @@ export const getMe = async (): Promise<{
   success: boolean;
   user: User;
 }> => {
-  const response = await fetch(`${API_URL}/auth/me`, {
+  const response = await fetch(`${API_BASE_URL}/auth/me`, {
     method: "GET",
     credentials: "include",
   });
@@ -101,7 +101,7 @@ export const logoutUser = async (): Promise<{
   success: boolean;
   message: string;
 }> => {
-  const response = await fetch(`${API_URL}/auth/logout`, {
+  const response = await fetch(`${API_BASE_URL}/auth/logout`, {
     method: "POST",
     credentials: "include",
   });

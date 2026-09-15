@@ -1,4 +1,4 @@
-const API_URL = "http://localhost:5000/api";
+import API_BASE_URL from "./api";
 
 export interface AdminUser {
   _id: string;
@@ -31,7 +31,7 @@ const restaurantId = (
     : restaurant?._id || null;
 
 export const getAllUsers = async (): Promise<AdminUser[]> => {
-  const response = await fetch(`${API_URL}/users`, {
+  const response = await fetch(`${API_BASE_URL}/users`, {
     method: "GET",
     credentials: "include",
   });
@@ -64,7 +64,7 @@ export const updateUserRole = async (
   assignedRestaurantId?: string | null
 ): Promise<AdminUser> => {
   const response = await fetch(
-    `${API_URL}/users/${userId}/role`,
+    `${API_BASE_URL}/users/${userId}/role`,
     {
       method: "PUT",
       headers: {
@@ -97,7 +97,7 @@ export const deleteUser = async (
   userId: string
 ): Promise<void> => {
   const response = await fetch(
-    `${API_URL}/users/${userId}`,
+    `${API_BASE_URL}/users/${userId}`,
     {
       method: "DELETE",
       credentials: "include",
@@ -116,7 +116,7 @@ export const deleteUser = async (
 export const createUser = async (
   data: CreateAdminUserData
 ): Promise<AdminUser> => {
-  const response = await fetch(`${API_URL}/users`, {
+  const response = await fetch(`${API_BASE_URL}/users`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",

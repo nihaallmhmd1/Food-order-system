@@ -1,4 +1,4 @@
-const API_URL = "http://localhost:5000/api";
+import API_BASE_URL from "./api";
 
 export interface Role {
   _id: string;
@@ -17,7 +17,7 @@ export interface CreateRoleData {
 
 // Fetch all roles
 export const getAllRoles = async (): Promise<Role[]> => {
-  const response = await fetch(`${API_URL}/roles`, {
+  const response = await fetch(`${API_BASE_URL}/roles`, {
     method: "GET",
     credentials: "include",
   });
@@ -37,7 +37,7 @@ export const getAllRoles = async (): Promise<Role[]> => {
 export const createRole = async (
   data: CreateRoleData
 ): Promise<Role> => {
-  const response = await fetch(`${API_URL}/roles`, {
+  const response = await fetch(`${API_BASE_URL}/roles`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -63,7 +63,7 @@ export const updateRole = async (
   data: CreateRoleData
 ): Promise<Role> => {
   const response = await fetch(
-    `${API_URL}/roles/${roleId}`,
+    `${API_BASE_URL}/roles/${roleId}`,
     {
       method: "PUT",
       headers: {
@@ -90,7 +90,7 @@ export const deleteRole = async (
   roleId: string
 ): Promise<void> => {
   const response = await fetch(
-    `${API_URL}/roles/${roleId}`,
+    `${API_BASE_URL}/roles/${roleId}`,
     {
       method: "DELETE",
       credentials: "include",

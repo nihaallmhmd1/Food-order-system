@@ -1,7 +1,7 @@
-const API_URL = "http://localhost:5000/api";
+import API_BASE_URL from "./api";
 
 export const getRestaurants = async () => {
-  const response = await fetch(`${API_URL}/restaurants`);
+  const response = await fetch(`${API_BASE_URL}/restaurants`);
 
   if (!response.ok) {
     throw new Error("Failed to fetch restaurants");
@@ -14,7 +14,7 @@ export const getRestaurants = async () => {
 
 export const getRestaurantById = async (id: string) => {
   const response = await fetch(
-    `${API_URL}/restaurants/${id}`
+    `${API_BASE_URL}/restaurants/${id}`
   );
 
   if (!response.ok) {
@@ -45,7 +45,7 @@ export interface CreateRestaurantData {
 export const createRestaurant = async (
   data: CreateRestaurantData
 ) => {
-  const response = await fetch(`${API_URL}/restaurants`, {
+  const response = await fetch(`${API_BASE_URL}/restaurants`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -70,7 +70,7 @@ export const updateRestaurant = async (
   data: Partial<CreateRestaurantData>
 ) => {
   const response = await fetch(
-    `${API_URL}/restaurants/${id}`,
+    `${API_BASE_URL}/restaurants/${id}`,
     {
       method: "PUT",
       headers: {
@@ -94,7 +94,7 @@ export const updateRestaurant = async (
 
 export const deleteRestaurant = async (id: string) => {
   const response = await fetch(
-    `${API_URL}/restaurants/${id}`,
+    `${API_BASE_URL}/restaurants/${id}`,
     {
       method: "DELETE",
       credentials: "include",

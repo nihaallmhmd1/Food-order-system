@@ -1,7 +1,7 @@
-const API_URL = "http://localhost:5000/api";
+import API_BASE_URL from "./api";
 
 export const getMyOrders = async () => {
-  const response = await fetch(`${API_URL}/orders/my-orders`, {
+  const response = await fetch(`${API_BASE_URL}/orders/my-orders`, {
     method: "GET",
     credentials: "include",
   });
@@ -30,7 +30,7 @@ export interface CreateOrderPayload {
 export const createOrder = async (
   payload: CreateOrderPayload
 ) => {
-  const response = await fetch(`${API_URL}/orders`, {
+  const response = await fetch(`${API_BASE_URL}/orders`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -101,7 +101,7 @@ export interface AdminOrder {
 }
 
 export const getAllOrders = async (): Promise<AdminOrder[]> => {
-  const response = await fetch(`${API_URL}/orders`, {
+  const response = await fetch(`${API_BASE_URL}/orders`, {
     method: "GET",
     credentials: "include",
   });
@@ -125,7 +125,7 @@ export const updateOrderStatus = async (
   }
 ) => {
   const response = await fetch(
-    `${API_URL}/orders/${id}/status`,
+    `${API_BASE_URL}/orders/${id}/status`,
     {
       method: "PUT",
       headers: {
@@ -148,7 +148,7 @@ export const updateOrderStatus = async (
 };
 
 export const cancelOrder = async (id: string) => {
-  const response = await fetch(`${API_URL}/orders/${id}`, {
+  const response = await fetch(`${API_BASE_URL}/orders/${id}`, {
     method: "DELETE",
     credentials: "include",
   });
