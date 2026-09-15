@@ -12,7 +12,7 @@ export interface User {
   _id?: string;
   name: string;
   email: string;
-  role: Role | string; // Supports populated object or string fallback
+  role: Role | string;
   restaurantId?: string | { _id: string; name: string } | null;
 }
 
@@ -30,7 +30,6 @@ export interface LoginData {
 export interface AuthResponse {
   success: boolean;
   message: string;
-  token: string;
   user: User;
 }
 
@@ -43,6 +42,7 @@ export const registerUser = async (
     headers: {
       "Content-Type": "application/json",
     },
+    credentials: "include",
     body: JSON.stringify(data),
   });
 
@@ -64,6 +64,7 @@ export const loginUser = async (
     headers: {
       "Content-Type": "application/json",
     },
+    credentials: "include",
     body: JSON.stringify(data),
   });
 
@@ -77,20 +78,38 @@ export const loginUser = async (
 };
 
 // Get currently logged-in user
-export const getMe = async (
-  token: string
-): Promise<{ success: boolean; user: User }> => {
+export const getMe = async (): Promise<{
+  success: boolean;
+  user: User;
+}> => {
   const response = await fetch(`${API_URL}/auth/me`, {
     method: "GET",
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
+    credentials: "include",
   });
 
   const result = await response.json();
 
   if (!response.ok) {
     throw new Error(result.message || "Authentication failed");
+  }
+
+  return result;
+};
+
+// Logout user
+export const logoutUser = async (): Promise<{
+  success: boolean;
+  message: string;
+}> => {
+  const response = await fetch(`${API_URL}/auth/logout`, {
+    method: "POST",
+    credentials: "include",
+  });
+
+  const result = await response.json();
+
+  if (!response.ok) {
+    throw new Error(result.message || "Logout failed");
   }
 
   return result;

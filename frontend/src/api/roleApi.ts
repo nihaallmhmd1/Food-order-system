@@ -15,89 +15,93 @@ export interface CreateRoleData {
   permissions?: string[];
 }
 
-// Fetch all created roles from MongoDB
+// Fetch all roles
 export const getAllRoles = async (): Promise<Role[]> => {
-  const token = localStorage.getItem("token");
-
   const response = await fetch(`${API_URL}/roles`, {
     method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
+    credentials: "include",
   });
 
   const result = await response.json();
 
   if (!response.ok) {
-    throw new Error(result.message || "Failed to fetch roles");
+    throw new Error(
+      result.message || "Failed to fetch roles"
+    );
   }
 
   return result.roles;
 };
 
-// Create a new role in MongoDB
-export const createRole = async (data: CreateRoleData): Promise<Role> => {
-  const token = localStorage.getItem("token");
-
+// Create role
+export const createRole = async (
+  data: CreateRoleData
+): Promise<Role> => {
   const response = await fetch(`${API_URL}/roles`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
     },
+    credentials: "include",
     body: JSON.stringify(data),
   });
 
   const result = await response.json();
 
   if (!response.ok) {
-    throw new Error(result.message || "Failed to create role");
+    throw new Error(
+      result.message || "Failed to create role"
+    );
   }
 
   return result.role;
 };
 
-// Update an existing role
+// Update role
 export const updateRole = async (
   roleId: string,
   data: CreateRoleData
 ): Promise<Role> => {
-  const token = localStorage.getItem("token");
-
-  const response = await fetch(`${API_URL}/roles/${roleId}`, {
-    method: "PUT",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
-    body: JSON.stringify(data),
-  });
+  const response = await fetch(
+    `${API_URL}/roles/${roleId}`,
+    {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      credentials: "include",
+      body: JSON.stringify(data),
+    }
+  );
 
   const result = await response.json();
 
   if (!response.ok) {
-    throw new Error(result.message || "Failed to update role");
+    throw new Error(
+      result.message || "Failed to update role"
+    );
   }
 
   return result.role;
 };
 
-// Delete a role
-export const deleteRole = async (roleId: string): Promise<void> => {
-  const token = localStorage.getItem("token");
-
-  const response = await fetch(`${API_URL}/roles/${roleId}`, {
-    method: "DELETE",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
-  });
+// Delete role
+export const deleteRole = async (
+  roleId: string
+): Promise<void> => {
+  const response = await fetch(
+    `${API_URL}/roles/${roleId}`,
+    {
+      method: "DELETE",
+      credentials: "include",
+    }
+  );
 
   const result = await response.json();
 
   if (!response.ok) {
-    throw new Error(result.message || "Failed to delete role");
+    throw new Error(
+      result.message || "Failed to delete role"
+    );
   }
 };

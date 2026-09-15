@@ -26,9 +26,9 @@ export const getCategories = async (restaurantId?: string) => {
     ? `${API_URL}/categories?restaurantId=${restaurantId}`
     : `${API_URL}/categories`;
 
-  const token = localStorage.getItem("token");
   const response = await fetch(url, {
-    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+    method: "GET",
+    credentials: "include",
   });
 
   if (!response.ok) {
@@ -42,21 +42,21 @@ export const getCategories = async (restaurantId?: string) => {
 
 // CREATE category
 export const createCategory = async (data: CreateCategoryData) => {
-  const token = localStorage.getItem("token");
-
   const response = await fetch(`${API_URL}/categories`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
     },
+    credentials: "include",
     body: JSON.stringify(data),
   });
 
   const result = await response.json();
 
   if (!response.ok) {
-    throw new Error(result.message || "Failed to create category");
+    throw new Error(
+      result.message || "Failed to create category"
+    );
   }
 
   return result.data;
@@ -67,21 +67,21 @@ export const updateCategory = async (
   id: string,
   data: UpdateCategoryData
 ) => {
-  const token = localStorage.getItem("token");
-
   const response = await fetch(`${API_URL}/categories/${id}`, {
     method: "PUT",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
     },
+    credentials: "include",
     body: JSON.stringify(data),
   });
 
   const result = await response.json();
 
   if (!response.ok) {
-    throw new Error(result.message || "Failed to update category");
+    throw new Error(
+      result.message || "Failed to update category"
+    );
   }
 
   return result.data;
@@ -89,19 +89,17 @@ export const updateCategory = async (
 
 // DELETE category
 export const deleteCategory = async (id: string) => {
-  const token = localStorage.getItem("token");
-
   const response = await fetch(`${API_URL}/categories/${id}`, {
     method: "DELETE",
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
+    credentials: "include",
   });
 
   const result = await response.json();
 
   if (!response.ok) {
-    throw new Error(result.message || "Failed to delete category");
+    throw new Error(
+      result.message || "Failed to delete category"
+    );
   }
 
   return result;

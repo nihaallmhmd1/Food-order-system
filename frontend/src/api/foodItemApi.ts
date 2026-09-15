@@ -1,13 +1,13 @@
 const API_URL = "http://localhost:5000/api";
 
 export const getFoodItems = async (restaurantId?: string) => {
-  const url = restaurantId 
-    ? `${API_URL}/food-items?restaurantId=${restaurantId}` 
+  const url = restaurantId
+    ? `${API_URL}/food-items?restaurantId=${restaurantId}`
     : `${API_URL}/food-items`;
 
-  const token = localStorage.getItem("token");
   const response = await fetch(url, {
-    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+    method: "GET",
+    credentials: "include",
   });
 
   if (!response.ok) {
@@ -34,14 +34,12 @@ export interface CreateFoodItemData {
 export const createFoodItem = async (
   data: CreateFoodItemData
 ) => {
-  const token = localStorage.getItem("token");
-
   const response = await fetch(`${API_URL}/food-items`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
     },
+    credentials: "include",
     body: JSON.stringify(data),
   });
 
@@ -60,14 +58,12 @@ export const updateFoodItem = async (
   id: string,
   data: Partial<CreateFoodItemData>
 ) => {
-  const token = localStorage.getItem("token");
-
   const response = await fetch(`${API_URL}/food-items/${id}`, {
     method: "PUT",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
     },
+    credentials: "include",
     body: JSON.stringify(data),
   });
 
@@ -83,13 +79,9 @@ export const updateFoodItem = async (
 };
 
 export const deleteFoodItem = async (id: string) => {
-  const token = localStorage.getItem("token");
-
   const response = await fetch(`${API_URL}/food-items/${id}`, {
     method: "DELETE",
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
+    credentials: "include",
   });
 
   const result = await response.json();

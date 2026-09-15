@@ -10,6 +10,7 @@ import {
   registerUser,
   loginUser,
   getMe,
+  logoutUser,
   type User,
   type RegisterData,
   type LoginData,
@@ -21,7 +22,7 @@ interface AuthContextType {
   loading: boolean;
   register: (data: RegisterData) => Promise<void>;
   login: (data: LoginData) => Promise<User>;
-  logout: () => void;
+  logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -36,19 +37,11 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
   // Check existing login when app starts
   useEffect(() => {
-    const token = localStorage.getItem("token");
-
-    if (!token) {
-      setLoading(false);
-      return;
-    }
-
-    getMe(token)
+    getMe()
       .then((result) => {
         setUser(result.user);
       })
       .catch(() => {
-        localStorage.removeItem("token");
         setUser(null);
       })
       .finally(() => {
@@ -60,7 +53,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const register = async (data: RegisterData) => {
     const result = await registerUser(data);
 
-    localStorage.setItem("token", result.token);
     setUser(result.user);
   };
 
@@ -68,15 +60,18 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const login = async (data: LoginData): Promise<User> => {
     const result = await loginUser(data);
 
-    localStorage.setItem("token", result.token);
     setUser(result.user);
+
     return result.user;
   };
 
   // Logout
-  const logout = () => {
-    localStorage.removeItem("token");
-    setUser(null);
+  const logout = async () => {
+    try {
+      await logoutUser();
+    } finally {
+      setUser(null);
+    }
   };
 
   return (

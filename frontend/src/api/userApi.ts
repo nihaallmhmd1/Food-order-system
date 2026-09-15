@@ -4,7 +4,7 @@ export interface AdminUser {
   _id: string;
   name: string;
   email: string;
-  role: string; // Dynamic role string
+  role: string;
   restaurantId?: string | null;
   createdAt: string;
   updatedAt: string;
@@ -18,37 +18,44 @@ export interface CreateAdminUserData {
   restaurantId?: string | null;
 }
 
-const roleName = (role: string | { name?: string } | null | undefined): string =>
+const roleName = (
+  role: string | { name?: string } | null | undefined
+): string =>
   typeof role === "string" ? role : role?.name || "";
 
-const restaurantId = (restaurant: string | { _id?: string } | null | undefined): string | null =>
-  typeof restaurant === "string" ? restaurant : restaurant?._id || null;
+const restaurantId = (
+  restaurant: string | { _id?: string } | null | undefined
+): string | null =>
+  typeof restaurant === "string"
+    ? restaurant
+    : restaurant?._id || null;
 
 export const getAllUsers = async (): Promise<AdminUser[]> => {
-  const token = localStorage.getItem("token");
-
   const response = await fetch(`${API_URL}/users`, {
     method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
+    credentials: "include",
   });
 
   const result = await response.json();
 
   if (!response.ok) {
-    throw new Error(result.message || "Failed to fetch users");
+    throw new Error(
+      result.message || "Failed to fetch users"
+    );
   }
 
-  return result.users.map((user: AdminUser & {
-    role: string | { name?: string } | null;
-    restaurantId?: string | { _id?: string } | null;
-  }) => ({
-    ...user,
-    role: roleName(user.role),
-    restaurantId: restaurantId(user.restaurantId),
-  }));
+  return result.users.map(
+    (
+      user: AdminUser & {
+        role: string | { name?: string } | null;
+        restaurantId?: string | { _id?: string } | null;
+      }
+    ) => ({
+      ...user,
+      role: roleName(user.role),
+      restaurantId: restaurantId(user.restaurantId),
+    })
+  );
 };
 
 export const updateUserRole = async (
@@ -56,21 +63,27 @@ export const updateUserRole = async (
   roleId: string,
   assignedRestaurantId?: string | null
 ): Promise<AdminUser> => {
-  const token = localStorage.getItem("token");
-
-  const response = await fetch(`${API_URL}/users/${userId}/role`, {
-    method: "PUT",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
-    body: JSON.stringify({ roleId, restaurantId: assignedRestaurantId || null }),
-  });
+  const response = await fetch(
+    `${API_URL}/users/${userId}/role`,
+    {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      credentials: "include",
+      body: JSON.stringify({
+        roleId,
+        restaurantId: assignedRestaurantId || null,
+      }),
+    }
+  );
 
   const result = await response.json();
 
   if (!response.ok) {
-    throw new Error(result.message || "Failed to update user role");
+    throw new Error(
+      result.message || "Failed to update user role"
+    );
   }
 
   return {
@@ -80,38 +93,46 @@ export const updateUserRole = async (
   };
 };
 
-export const deleteUser = async (userId: string): Promise<void> => {
-  const token = localStorage.getItem("token");
-
-  const response = await fetch(`${API_URL}/users/${userId}`, {
-    method: "DELETE",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
-  });
+export const deleteUser = async (
+  userId: string
+): Promise<void> => {
+  const response = await fetch(
+    `${API_URL}/users/${userId}`,
+    {
+      method: "DELETE",
+      credentials: "include",
+    }
+  );
 
   const result = await response.json();
 
   if (!response.ok) {
-    throw new Error(result.message || "Failed to delete user");
+    throw new Error(
+      result.message || "Failed to delete user"
+    );
   }
 };
 
-export const createUser = async (data: CreateAdminUserData): Promise<AdminUser> => {
-  const token = localStorage.getItem("token");
+export const createUser = async (
+  data: CreateAdminUserData
+): Promise<AdminUser> => {
   const response = await fetch(`${API_URL}/users`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
     },
+    credentials: "include",
     body: JSON.stringify(data),
   });
+
   const result = await response.json();
+
   if (!response.ok) {
-    throw new Error(result.message || "Failed to create user");
+    throw new Error(
+      result.message || "Failed to create user"
+    );
   }
+
   return {
     ...result.user,
     role: roleName(result.user.role),

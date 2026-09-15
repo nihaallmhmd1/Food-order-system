@@ -13,7 +13,9 @@ export const getRestaurants = async () => {
 };
 
 export const getRestaurantById = async (id: string) => {
-  const response = await fetch(`${API_URL}/restaurants/${id}`);
+  const response = await fetch(
+    `${API_URL}/restaurants/${id}`
+  );
 
   if (!response.ok) {
     throw new Error("Restaurant not found");
@@ -43,14 +45,12 @@ export interface CreateRestaurantData {
 export const createRestaurant = async (
   data: CreateRestaurantData
 ) => {
-  const token = localStorage.getItem("token");
-
   const response = await fetch(`${API_URL}/restaurants`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
     },
+    credentials: "include",
     body: JSON.stringify(data),
   });
 
@@ -69,16 +69,17 @@ export const updateRestaurant = async (
   id: string,
   data: Partial<CreateRestaurantData>
 ) => {
-  const token = localStorage.getItem("token");
-
-  const response = await fetch(`${API_URL}/restaurants/${id}`, {
-    method: "PUT",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
-    body: JSON.stringify(data),
-  });
+  const response = await fetch(
+    `${API_URL}/restaurants/${id}`,
+    {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      credentials: "include",
+      body: JSON.stringify(data),
+    }
+  );
 
   const result = await response.json();
 
@@ -92,14 +93,13 @@ export const updateRestaurant = async (
 };
 
 export const deleteRestaurant = async (id: string) => {
-  const token = localStorage.getItem("token");
-
-  const response = await fetch(`${API_URL}/restaurants/${id}`, {
-    method: "DELETE",
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
+  const response = await fetch(
+    `${API_URL}/restaurants/${id}`,
+    {
+      method: "DELETE",
+      credentials: "include",
+    }
+  );
 
   const result = await response.json();
 

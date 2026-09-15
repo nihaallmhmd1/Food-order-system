@@ -56,20 +56,17 @@ export interface DashboardStats {
 }
 
 export const getDashboardStats = async (): Promise<DashboardStats> => {
-  const token = localStorage.getItem("token");
-
   const response = await fetch(`${API_URL}/admin/dashboard/stats`, {
     method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
+    credentials: "include",
   });
 
   const result = await response.json();
 
   if (!response.ok) {
-    throw new Error(result.message || "Failed to fetch dashboard stats");
+    throw new Error(
+      result.message || "Failed to fetch dashboard stats"
+    );
   }
 
   return result.data;
