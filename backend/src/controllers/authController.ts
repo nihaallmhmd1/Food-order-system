@@ -214,6 +214,7 @@ export const getMe = async (
   res: Response
 ): Promise<void> => {
   try {
+    res.set("Cache-Control", "no-store");
     if (!req.user) {
       res.status(401).json({
         success: false,

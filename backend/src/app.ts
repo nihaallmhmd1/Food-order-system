@@ -14,6 +14,8 @@ import roleRoutes from "./routes/roleRoutes";
 
 const app = express();
 
+app.disable("etag");
+
 app.use(cookieParser());
 
 const allowedOrigins = (process.env.CLIENT_URL || "http://localhost:5173")
